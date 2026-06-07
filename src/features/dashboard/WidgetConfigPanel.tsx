@@ -32,6 +32,7 @@ const aggregations: Aggregation[] = [
 ];
 
 const periods: GoalPeriod[] = ["daily", "weekly", "monthly", "custom"];
+const sizePresets = ["small", "medium", "large", "full-width"] as const;
 
 function boolFromSetting(value: unknown, fallback: boolean): boolean {
   return typeof value === "boolean" ? value : fallback;
@@ -48,6 +49,7 @@ export function WidgetConfigPanel({ userId, dashboards, metrics, widget, onSaved
   const [aggregation, setAggregation] = useState<Aggregation>(widget?.aggregation ?? "countEntries");
   const [fieldKey, setFieldKey] = useState(widget?.fieldKey ?? "");
   const [displayOrder, setDisplayOrder] = useState(String(widget?.displayOrder ?? 100));
+  const [sizePreset, setSizePreset] = useState(widget?.layout.sizePreset ?? "medium");
   const [visible, setVisible] = useState(widget?.visible ?? true);
   const [visibleInKiosk, setVisibleInKiosk] = useState(widget?.visibleInKiosk ?? false);
   const [showActual, setShowActual] = useState(boolFromSetting(widget?.visualizationSettings.showActual, true));
@@ -67,6 +69,7 @@ export function WidgetConfigPanel({ userId, dashboards, metrics, widget, onSaved
     setAggregation(widget?.aggregation ?? "countEntries");
     setFieldKey(widget?.fieldKey ?? "");
     setDisplayOrder(String(widget?.displayOrder ?? 100));
+    setSizePreset(widget?.layout.sizePreset ?? "medium");
     setVisible(widget?.visible ?? true);
     setVisibleInKiosk(widget?.visibleInKiosk ?? false);
     setShowActual(boolFromSetting(widget?.visualizationSettings.showActual, true));
@@ -105,7 +108,9 @@ export function WidgetConfigPanel({ userId, dashboards, metrics, widget, onSaved
           showStatus,
           showTrend
         },
-        layout: widget?.layout ?? { x: 0, y: 0, w: 4, h: 3 },
+        layout: widget?.layout
+          ? { ...widget.layout, sizePreset }
+          : { x: 0, y: 0, w: 4, h: 3, minW: 2, minH: 2, sizePreset },
         visible,
         visibleInKiosk,
         displayOrder: Number(displayOrder) || 0,
@@ -187,6 +192,16 @@ export function WidgetConfigPanel({ userId, dashboards, metrics, widget, onSaved
       <label>
         Display order
         <input type="number" value={displayOrder} onChange={(event) => setDisplayOrder(event.target.value)} />
+      </label>
+      <label>
+        Size preset
+        <select value={sizePreset} onChange={(event) => setSizePreset(event.target.value as typeof sizePresets[number])}>
+          {sizePresets.map((preset) => (
+            <option key={preset} value={preset}>
+              {preset}
+            </option>
+          ))}
+        </select>
       </label>
       <div className="toggle-grid">
         <label><input checked={visible} type="checkbox" onChange={(event) => setVisible(event.target.checked)} /> Visible</label>

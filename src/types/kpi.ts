@@ -206,6 +206,7 @@ export type WidgetLayout = {
   h: number;
   minW?: number;
   minH?: number;
+  sizePreset?: "small" | "medium" | "large" | "full-width";
 };
 
 export type Dashboard = {

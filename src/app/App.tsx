@@ -32,7 +32,7 @@ export function App() {
             <Route path="/settings" element={<SettingsPage />} />
           </Route>
           <Route element={<KioskLayout />}>
-            <Route path="/kiosk" element={<PlaceholderPage title="Kiosk" description="Full-screen KPI display mode." />} />
+            <Route path="/kiosk" element={<DashboardPage dashboardType="kiosk" kioskMode />} />
           </Route>
         </Routes>
       </BrowserRouter>

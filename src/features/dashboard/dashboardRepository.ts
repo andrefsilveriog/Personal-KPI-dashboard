@@ -1,5 +1,5 @@
 import { addDoc, deleteDoc, setDoc } from "firebase/firestore";
-import type { DashboardWidget } from "../../types/kpi";
+import type { Dashboard, DashboardWidget } from "../../types/kpi";
 import { getUserCollection, getUserDocument } from "../../lib/firebase/collections";
 
 export type SaveDashboardWidgetInput = Omit<DashboardWidget, "id" | "userId" | "createdAt" | "updatedAt"> & {
@@ -76,4 +76,66 @@ export async function deleteDashboardWidget(userId: string, widgetId: string): P
   }
 
   await deleteDoc(ref);
+}
+
+export type SaveDashboardInput = Omit<Dashboard, "id" | "userId" | "createdAt" | "updatedAt"> & {
+  id?: string;
+  userId: string;
+  createdAt?: string;
+};
+
+export async function saveDashboard(input: SaveDashboardInput): Promise<Dashboard> {
+  const now = new Date().toISOString();
+  const dashboard: Dashboard = {
+    ...input,
+    id: input.id ?? "",
+    userId: input.userId,
+    createdAt: input.createdAt ?? now,
+    updatedAt: now
+  };
+
+  if (input.id) {
+    const ref = getUserDocument(input.userId, "dashboards", input.id);
+
+    if (!ref) {
+      throw new Error("Firebase config is missing.");
+    }
+
+    await setDoc(ref, dashboard);
+    return dashboard;
+  }
+
+  const collectionRef = getUserCollection(input.userId, "dashboards");
+
+  if (!collectionRef) {
+    throw new Error("Firebase config is missing.");
+  }
+
+  const ref = await addDoc(collectionRef, dashboard);
+  const savedDashboard = { ...dashboard, id: ref.id };
+  await setDoc(ref, savedDashboard);
+  return savedDashboard;
+}
+
+export async function updateDashboard(userId: string, dashboard: Dashboard): Promise<Dashboard> {
+  return saveDashboard({
+    ...dashboard,
+    userId,
+    createdAt: dashboard.createdAt
+  });
+}
+
+export async function setDefaultDashboard(userId: string, dashboards: Dashboard[], dashboardId: string): Promise<void> {
+  await Promise.all(
+    dashboards.map((dashboard) =>
+      updateDashboard(userId, {
+        ...dashboard,
+        isDefault: dashboard.id === dashboardId
+      })
+    )
+  );
+}
+
+export async function saveDashboardWidgetLayouts(userId: string, widgets: DashboardWidget[]): Promise<void> {
+  await Promise.all(widgets.map((widget) => updateDashboardWidget(userId, widget)));
 }

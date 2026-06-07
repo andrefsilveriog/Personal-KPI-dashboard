@@ -1,6 +1,11 @@
 import { describe, expect, it } from "vitest";
 import type { MetricEntry } from "../types/kpi";
 import { computeWidgetData, getWidgetDisplayOptions, normalizeWidgetType } from "../features/dashboard/dashboardEngine";
+import {
+  applyDashboardLayoutPreset,
+  mergeGridLayoutIntoWidgets,
+  widgetsToGridLayout
+} from "../features/dashboard/dashboardLayouts";
 import { createStarterSeed } from "../seed/starterSeed";
 
 const seed = createStarterSeed({
@@ -107,5 +112,28 @@ describe("dashboard widget engine", () => {
       showStatus: true,
       showTrend: true
     });
+  });
+
+  it("converts widget layout records into grid layout items", () => {
+    const layout = widgetsToGridLayout(seed.dashboardWidgets.slice(0, 2));
+
+    expect(layout[0]).toMatchObject({ i: "starter-widget-default-workout", x: 0, y: 0, w: 4, h: 3 });
+    expect(layout[1].minW).toBe(2);
+  });
+
+  it("applies a top strip plus lower charts layout preset", () => {
+    const widgets = applyDashboardLayoutPreset(seed.dashboardWidgets.slice(0, 4), "topStripPlusLowerCharts");
+
+    expect(widgets[0].layout).toMatchObject({ x: 0, y: 0, w: 4, h: 2, sizePreset: "small" });
+    expect(widgets[3].layout).toMatchObject({ x: 0, y: 2, w: 6, h: 4, sizePreset: "large" });
+  });
+
+  it("merges changed grid coordinates back into widget records", () => {
+    const [widget] = seed.dashboardWidgets;
+    const [updated] = mergeGridLayoutIntoWidgets([widget], [
+      { i: widget.id, x: 6, y: 4, w: 6, h: 5, minW: 3, minH: 2 }
+    ]);
+
+    expect(updated.layout).toMatchObject({ x: 6, y: 4, w: 6, h: 5, minW: 3, minH: 2 });
   });
 });

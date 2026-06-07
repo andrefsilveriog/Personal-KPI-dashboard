@@ -260,10 +260,69 @@ a {
   max-width: 1180px;
 }
 
-.dashboard-grid {
+.kiosk-dashboard-page {
+  width: 100%;
+  max-width: none;
+}
+
+.dashboard-heading-actions,
+.layout-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.dashboard-builder-panel {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-  gap: 16px;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #26323b;
+  border-radius: 8px;
+  background: #101820;
+}
+
+.dashboard-builder-panel label {
+  display: grid;
+  gap: 7px;
+  color: #c7d6df;
+  font-size: 0.88rem;
+}
+
+.dashboard-builder-panel input,
+.dashboard-builder-panel select {
+  width: 100%;
+  border: 1px solid #33424d;
+  border-radius: 8px;
+  background: #0f151a;
+  color: #eef4f8;
+  font: inherit;
+  padding: 10px 11px;
+}
+
+.dashboard-grid-layout {
+  min-height: 240px;
+}
+
+.dashboard-grid-layout .react-grid-item {
+  transition: none;
+}
+
+.dashboard-grid-layout .react-grid-item.react-grid-placeholder {
+  border-radius: 8px;
+  background: #7dd3a8;
+  opacity: 0.22;
+}
+
+.dashboard-grid-layout .react-resizable-handle::after {
+  border-color: #7dd3a8;
+}
+
+.dashboard-grid-layout .widget-card {
+  height: 100%;
+  overflow: hidden;
 }
 
 .widget-card {
@@ -302,6 +361,18 @@ a {
   gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+}
+
+.widget-drag-handle {
+  min-height: 30px;
+  border: 1px solid #33424d;
+  border-radius: 8px;
+  padding: 6px 8px;
+  background: #0f151a;
+  color: #d8e6ee;
+  cursor: move;
+  font-size: 0.78rem;
+  font-weight: 700;
 }
 
 .hidden-label {
