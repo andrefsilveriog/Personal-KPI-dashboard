@@ -198,6 +198,8 @@ export type GoalVersion = {
 
 export type DashboardSettings = Record<string, string | number | boolean | null>;
 export type VisualizationSettings = Record<string, string | number | boolean | null>;
+export type KioskScale = 75 | 80 | 90 | 100 | 110 | 125 | 150;
+export type KioskRefreshIntervalSeconds = 30 | 45 | 60;
 
 export type WidgetLayout = {
   x: number;
@@ -272,6 +274,10 @@ export type AppSettings = {
   id: string;
   userId: string;
   theme: "dark" | "light" | "system";
+  selectedKioskDashboardId?: string;
+  kioskScale?: KioskScale;
+  kioskRefreshIntervalSeconds?: KioskRefreshIntervalSeconds;
+  rotateKioskDashboards?: boolean;
   createdAt: TimestampString;
   updatedAt: TimestampString;
 };

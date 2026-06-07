@@ -1,5 +1,5 @@
 import { addDoc, getDocs, setDoc } from "firebase/firestore";
-import type { BudgetVersion, Dashboard, DashboardWidget, Dimension, GoalVersion, Metric, MetricEntry, MetricField } from "../../types/kpi";
+import type { AppSettings, BudgetVersion, Dashboard, DashboardWidget, Dimension, GoalVersion, Metric, MetricEntry, MetricField } from "../../types/kpi";
 import { getUserCollection, getUserDocument } from "../../lib/firebase/collections";
 import { computeCalculatedValues } from "./entryCalculations";
 import { resolveEntryPeriod, todayInputValue } from "./entryPeriods";
@@ -12,6 +12,7 @@ export type KpiMetadata = {
   dashboards: Dashboard[];
   dashboardWidgets: DashboardWidget[];
   goalVersions: GoalVersion[];
+  appSettings: AppSettings[];
 };
 
 export async function fetchKpiMetadata(userId: string): Promise<KpiMetadata> {
@@ -22,19 +23,21 @@ export async function fetchKpiMetadata(userId: string): Promise<KpiMetadata> {
   const dashboardCollection = getUserCollection(userId, "dashboards");
   const widgetCollection = getUserCollection(userId, "dashboardWidgets");
   const goalCollection = getUserCollection(userId, "goalVersions");
+  const appSettingsCollection = getUserCollection(userId, "appSettings");
 
-  if (!metricCollection || !fieldCollection || !dimensionCollection || !budgetCollection || !dashboardCollection || !widgetCollection || !goalCollection) {
+  if (!metricCollection || !fieldCollection || !dimensionCollection || !budgetCollection || !dashboardCollection || !widgetCollection || !goalCollection || !appSettingsCollection) {
     throw new Error("Firebase config is missing.");
   }
 
-  const [metricsSnapshot, fieldsSnapshot, dimensionsSnapshot, budgetsSnapshot, dashboardsSnapshot, widgetsSnapshot, goalsSnapshot] = await Promise.all([
+  const [metricsSnapshot, fieldsSnapshot, dimensionsSnapshot, budgetsSnapshot, dashboardsSnapshot, widgetsSnapshot, goalsSnapshot, appSettingsSnapshot] = await Promise.all([
     getDocs(metricCollection),
     getDocs(fieldCollection),
     getDocs(dimensionCollection),
     getDocs(budgetCollection),
     getDocs(dashboardCollection),
     getDocs(widgetCollection),
-    getDocs(goalCollection)
+    getDocs(goalCollection),
+    getDocs(appSettingsCollection)
   ]);
 
   return {
@@ -44,7 +47,8 @@ export async function fetchKpiMetadata(userId: string): Promise<KpiMetadata> {
     budgetVersions: budgetsSnapshot.docs.map((doc) => doc.data()),
     dashboards: dashboardsSnapshot.docs.map((doc) => doc.data()),
     dashboardWidgets: widgetsSnapshot.docs.map((doc) => doc.data()),
-    goalVersions: goalsSnapshot.docs.map((doc) => doc.data())
+    goalVersions: goalsSnapshot.docs.map((doc) => doc.data()),
+    appSettings: appSettingsSnapshot.docs.map((doc) => doc.data())
   };
 }
 

@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useAuth } from "../../lib/firebase/useAuth";
 import { seedStarterMetrics, type SeedStarterMetricsResult } from "../../seed/seedStarterMetrics";
+import { KioskSettingsSection } from "../kiosk/KioskSettingsSection";
 import { CategoriesBudgetsSection } from "../spending/CategoriesBudgetsSection";
 
 type SeedState =
@@ -59,6 +60,7 @@ export function SettingsPage() {
       )}
       {status === "loading" && <p className="status-message">Authenticating before seeding is available.</p>}
       {seedState.message && <p className={`status-message ${seedState.status}`}>{seedState.message}</p>}
+      <KioskSettingsSection />
       <CategoriesBudgetsSection />
     </section>
   );

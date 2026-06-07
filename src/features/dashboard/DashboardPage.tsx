@@ -1,4 +1,5 @@
-import { useEffect, useMemo, useState, type FormEvent } from "react";
+import { useEffect, useMemo, useState, type CSSProperties, type FormEvent } from "react";
+import { format } from "date-fns";
 import GridLayout, { WidthProvider, type Layout } from "react-grid-layout";
 import "react-grid-layout/css/styles.css";
 import "react-resizable/css/styles.css";
@@ -24,12 +25,20 @@ import {
   updateDashboardWidget
 } from "./dashboardRepository";
 import { WidgetConfigPanel } from "./WidgetConfigPanel";
+import { resolveKioskSettings } from "../kiosk/kioskSettings";
 
 const ResponsiveGrid = WidthProvider(GridLayout);
 
 type DashboardPageProps = {
   dashboardType?: DashboardType;
   kioskMode?: boolean;
+};
+
+type KioskStyle = CSSProperties & {
+  "--kiosk-scale"?: string;
+  "--kiosk-card-padding"?: string;
+  "--kiosk-value-size"?: string;
+  "--kiosk-grid-gap"?: string;
 };
 
 function layoutFromReactGrid(layout: Layout[]): GridLayoutItem[] {
@@ -61,13 +70,27 @@ function sortWidgets(widgets: DashboardWidget[]): DashboardWidget[] {
 export function DashboardPage({ dashboardType, kioskMode = false }: DashboardPageProps) {
   const { userId } = useAuth();
   const { status, metadata, entries, error, reload } = useKpiData();
+  const kioskDashboards = useMemo(
+    () => metadata.dashboards.filter((dashboard) => dashboard.type === "kiosk"),
+    [metadata.dashboards]
+  );
+  const appSettings = metadata.appSettings[0];
+  const kioskSettings = resolveKioskSettings(appSettings, kioskDashboards[0]?.id);
   const preferredDashboard = useMemo(() => {
+    if (kioskMode) {
+      const selectedKioskDashboard = metadata.dashboards.find(
+        (dashboard) => dashboard.id === kioskSettings.selectedKioskDashboardId
+      );
+
+      return selectedKioskDashboard ?? kioskDashboards[0] ?? metadata.dashboards[0];
+    }
+
     const typedDashboard = dashboardType
       ? metadata.dashboards.find((dashboard) => dashboard.type === dashboardType)
       : undefined;
 
     return typedDashboard ?? metadata.dashboards.find((dashboard) => dashboard.isDefault) ?? metadata.dashboards[0];
-  }, [dashboardType, metadata.dashboards]);
+  }, [dashboardType, kioskDashboards, kioskMode, kioskSettings.selectedKioskDashboardId, metadata.dashboards]);
   const [selectedDashboardId, setSelectedDashboardId] = useState("");
   const [editingWidget, setEditingWidget] = useState<DashboardWidget | undefined>();
   const [isCreatingWidget, setIsCreatingWidget] = useState(false);
@@ -77,12 +100,18 @@ export function DashboardPage({ dashboardType, kioskMode = false }: DashboardPag
   const [renameValue, setRenameValue] = useState("");
   const [draftLayout, setDraftLayout] = useState<GridLayoutItem[]>([]);
   const [message, setMessage] = useState<string | null>(null);
+  const [currentTime, setCurrentTime] = useState(() => new Date());
 
   useEffect(() => {
+    if (kioskMode && preferredDashboard && selectedDashboardId !== preferredDashboard.id) {
+      setSelectedDashboardId(preferredDashboard.id);
+      return;
+    }
+
     if (!selectedDashboardId && preferredDashboard) {
       setSelectedDashboardId(preferredDashboard.id);
     }
-  }, [preferredDashboard, selectedDashboardId]);
+  }, [kioskMode, preferredDashboard, selectedDashboardId]);
 
   const availableDashboards = useMemo(
     () => (dashboardType ? metadata.dashboards.filter((dashboard) => dashboard.type === dashboardType) : metadata.dashboards),
@@ -103,11 +132,49 @@ export function DashboardPage({ dashboardType, kioskMode = false }: DashboardPag
     [draftLayout, widgets]
   );
   const pageTitle = activeDashboard?.name ?? (kioskMode ? "Kiosk" : "Dashboard");
+  const selectedPeriods = useMemo(
+    () => Array.from(new Set(widgets.map((widget) => widget.period))).join(", "),
+    [widgets]
+  );
+  const kioskScaleFactor = kioskSettings.scale / 100;
+  const kioskGridGap = Math.round(16 * kioskScaleFactor);
+  const kioskStyle: KioskStyle = kioskMode
+    ? {
+        "--kiosk-scale": String(kioskScaleFactor),
+        "--kiosk-card-padding": `${Math.round(18 * kioskScaleFactor)}px`,
+        "--kiosk-value-size": `${Math.max(1.7, 2.3 * kioskScaleFactor)}rem`,
+        "--kiosk-grid-gap": `${kioskGridGap}px`
+      }
+    : {};
 
   useEffect(() => {
     setRenameValue(activeDashboard?.name ?? "");
     setDraftLayout(widgetsToGridLayout(widgets));
   }, [activeDashboard?.id, activeDashboard?.name, widgets]);
+
+  useEffect(() => {
+    if (!kioskMode || status !== "ready") {
+      return undefined;
+    }
+
+    const refreshTimer = window.setInterval(() => {
+      void reload();
+    }, kioskSettings.refreshIntervalSeconds * 1000);
+
+    return () => window.clearInterval(refreshTimer);
+  }, [kioskMode, kioskSettings.refreshIntervalSeconds, reload, status]);
+
+  useEffect(() => {
+    if (!kioskMode) {
+      return undefined;
+    }
+
+    const clockTimer = window.setInterval(() => {
+      setCurrentTime(new Date());
+    }, 1000);
+
+    return () => window.clearInterval(clockTimer);
+  }, [kioskMode]);
 
   async function mutateWidget(action: () => Promise<unknown>, successMessage: string) {
     try {
@@ -195,7 +262,7 @@ export function DashboardPage({ dashboardType, kioskMode = false }: DashboardPag
 
   function renderShellMessage(text: string, isError = false) {
     return (
-      <section className={kioskMode ? "dashboard-page kiosk-dashboard-page" : "dashboard-page"}>
+      <section className={kioskMode ? "dashboard-page kiosk-dashboard-page" : "dashboard-page"} style={kioskStyle}>
         <div className="page-heading">
           <div>
             <p className="eyebrow">{kioskMode ? "Kiosk" : "Dashboard"}</p>
@@ -220,13 +287,26 @@ export function DashboardPage({ dashboardType, kioskMode = false }: DashboardPag
   }
 
   return (
-    <section className={kioskMode ? "dashboard-page kiosk-dashboard-page" : "dashboard-page"}>
-      <div className="page-heading">
-        <div>
-          <p className="eyebrow">{kioskMode ? "Kiosk" : "Dashboard"}</p>
-          <h1>{pageTitle}</h1>
-        </div>
-        {!kioskMode && (
+    <section className={kioskMode ? "dashboard-page kiosk-dashboard-page" : "dashboard-page"} style={kioskStyle}>
+      {kioskMode ? (
+        <header className="kiosk-header">
+          <div>
+            <p className="eyebrow">Kiosk</p>
+            <h1>{pageTitle}</h1>
+            {selectedPeriods && <p>Periods: {selectedPeriods}</p>}
+          </div>
+          <div className="kiosk-clock" aria-live="polite">
+            <strong>{format(currentTime, "HH:mm:ss")}</strong>
+            <span>{format(currentTime, "EEEE, MMMM d, yyyy")}</span>
+            <em>Refresh every {kioskSettings.refreshIntervalSeconds}s</em>
+          </div>
+        </header>
+      ) : (
+        <div className="page-heading">
+          <div>
+            <p className="eyebrow">Dashboard</p>
+            <h1>{pageTitle}</h1>
+          </div>
           <div className="dashboard-heading-actions">
             <button className="secondary-button" type="button" onClick={() => setIsCreatingDashboard((value) => !value)}>
               Create dashboard
@@ -235,8 +315,8 @@ export function DashboardPage({ dashboardType, kioskMode = false }: DashboardPag
               Create widget
             </button>
           </div>
-        )}
-      </div>
+        </div>
+      )}
       {message && <p className="status-message">{message}</p>}
       {!activeDashboard && <p className="status-message">Seed or create a dashboard before adding widgets.</p>}
       {!kioskMode && activeDashboard && (
@@ -339,9 +419,13 @@ export function DashboardPage({ dashboardType, kioskMode = false }: DashboardPag
         isDraggable={!kioskMode}
         isResizable={!kioskMode}
         layout={gridLayout}
-        margin={[16, 16]}
-        rowHeight={72}
-        onLayoutChange={(nextLayout) => setDraftLayout(layoutFromReactGrid(nextLayout))}
+        rowHeight={kioskMode ? Math.round(78 * kioskScaleFactor) : 72}
+        margin={kioskMode ? [kioskGridGap, kioskGridGap] : [16, 16]}
+        onLayoutChange={(nextLayout) => {
+          if (!kioskMode) {
+            setDraftLayout(layoutFromReactGrid(nextLayout));
+          }
+        }}
       >
         {widgets.map((widget) => {
           const data = computeWidgetData({
