@@ -26,8 +26,40 @@ export type GoalPeriod = "daily" | "weekly" | "monthly" | "custom";
 export type DashboardType = "default" | "kiosk" | "mobile" | "weeklyReview" | "monthlyReview" | "custom";
 export type BudgetPeriod = "monthly";
 
-export type Aggregation = "sum" | "average" | "min" | "max" | "count" | "latest" | "custom";
-export type ComparisonOperator = "eq" | "neq" | "gt" | "gte" | "lt" | "lte" | "between";
+export type Aggregation =
+  | "countEntries"
+  | "countWhere"
+  | "countUniqueDaysWhere"
+  | "sumField"
+  | "averageField"
+  | "latestValue"
+  | "percentWhere"
+  | "groupedSum"
+  | "budgetUsedPercentage"
+  | "weightedScore"
+  | "calculatedFormula"
+  | "sum"
+  | "average"
+  | "count"
+  | "latest"
+  | "custom";
+export type ComparisonOperator =
+  | "equals"
+  | "notEquals"
+  | "greaterThan"
+  | "greaterThanOrEqual"
+  | "lessThan"
+  | "lessThanOrEqual"
+  | "between"
+  | "withinPercentageTolerance"
+  | "isEmpty"
+  | "isNotEmpty"
+  | "eq"
+  | "neq"
+  | "gt"
+  | "gte"
+  | "lt"
+  | "lte";
 export type GoalDirection = "increase" | "decrease" | "maintain";
 export type ToleranceType = "absolute" | "percentage";
 
@@ -54,6 +86,13 @@ export type RuleCondition = {
 
 export type AggregationConfig = {
   conditions?: RuleCondition[];
+  groupByFieldKey?: string;
+  formula?: string;
+  scoreWeights?: Array<{
+    fieldKey: string;
+    weight: number;
+    valueScores?: Record<string, number>;
+  }>;
 };
 
 export type CalculationDefinition =

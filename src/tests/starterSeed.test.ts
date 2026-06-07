@@ -33,7 +33,7 @@ describe("starter seed config", () => {
   it("stores conditional goal behavior as metadata", () => {
     const workoutGoal = seed.goalVersions.find((goal) => goal.id === "starter-goal-workout-weekly-completed");
 
-    expect(workoutGoal?.aggregation).toBe("count");
+    expect(workoutGoal?.aggregation).toBe("countWhere");
     expect(workoutGoal?.aggregationConfig?.conditions).toEqual([
       { fieldKey: "completed", operator: "eq", value: true }
     ]);

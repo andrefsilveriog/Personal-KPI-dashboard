@@ -4,6 +4,8 @@ import { KioskLayout } from "./layouts/KioskLayout";
 import { AuthProvider } from "../lib/firebase/AuthProvider";
 import { PlaceholderPage } from "../components/PlaceholderPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
+import { QuickEntryPage } from "../features/entries/QuickEntryPage";
+import { FullEntryPage } from "../features/entries/FullEntryPage";
 
 const routerBasename = import.meta.env.BASE_URL === "/" ? "/" : import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -18,8 +20,8 @@ export function App() {
               path="/dashboard"
               element={<PlaceholderPage title="Dashboard" description="Configurable KPI widgets will render here." />}
             />
-            <Route path="/today" element={<PlaceholderPage title="Today" description="Dynamic quick entry will render here." />} />
-            <Route path="/logs" element={<PlaceholderPage title="Logs" description="Metric entries and filters will render here." />} />
+            <Route path="/today" element={<QuickEntryPage />} />
+            <Route path="/logs" element={<FullEntryPage />} />
             <Route
               path="/metrics"
               element={<PlaceholderPage title="Metrics" description="Metric metadata management will render here." />}

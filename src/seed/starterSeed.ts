@@ -446,7 +446,7 @@ export function createStarterSeed(context: SeedContext): SeedCollections {
       fieldKey: "completed",
       name: "Weekly completed workouts",
       period: "weekly",
-      aggregation: "count",
+      aggregation: "countWhere",
       aggregationConfig: {
         conditions: [{ fieldKey: "completed", operator: "eq", value: true }]
       },
@@ -467,8 +467,8 @@ export function createStarterSeed(context: SeedContext): SeedCollections {
         metricId: "starter-nutrition",
         fieldKey: key,
         name: `Daily ${key.replace("_g", "")} target`,
-        period: "daily",
-        aggregation: "latest",
+      period: "daily",
+        aggregation: "latestValue",
         comparisonOperator: "eq",
         targetValue: target,
         toleranceType: "percentage",
