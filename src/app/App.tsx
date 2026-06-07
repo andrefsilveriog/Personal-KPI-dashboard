@@ -8,7 +8,7 @@ import { SettingsPage } from "../features/settings/SettingsPage";
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter>
+      <BrowserRouter basename={import.meta.env.BASE_URL}>
         <Routes>
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
