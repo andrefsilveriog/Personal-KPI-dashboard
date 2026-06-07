@@ -15,7 +15,10 @@ const emptyMetadata: KpiMetadata = {
   metrics: [],
   fields: [],
   dimensions: [],
-  budgetVersions: []
+  budgetVersions: [],
+  dashboards: [],
+  dashboardWidgets: [],
+  goalVersions: []
 };
 
 export function useKpiData(): KpiDataState {

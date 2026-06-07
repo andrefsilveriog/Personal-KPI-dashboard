@@ -1,5 +1,5 @@
 import { addDoc, getDocs, setDoc } from "firebase/firestore";
-import type { BudgetVersion, Dimension, Metric, MetricEntry, MetricField } from "../../types/kpi";
+import type { BudgetVersion, Dashboard, DashboardWidget, Dimension, GoalVersion, Metric, MetricEntry, MetricField } from "../../types/kpi";
 import { getUserCollection, getUserDocument } from "../../lib/firebase/collections";
 import { computeCalculatedValues } from "./entryCalculations";
 import { resolveEntryPeriod, todayInputValue } from "./entryPeriods";
@@ -9,6 +9,9 @@ export type KpiMetadata = {
   fields: MetricField[];
   dimensions: Dimension[];
   budgetVersions: BudgetVersion[];
+  dashboards: Dashboard[];
+  dashboardWidgets: DashboardWidget[];
+  goalVersions: GoalVersion[];
 };
 
 export async function fetchKpiMetadata(userId: string): Promise<KpiMetadata> {
@@ -16,23 +19,32 @@ export async function fetchKpiMetadata(userId: string): Promise<KpiMetadata> {
   const fieldCollection = getUserCollection(userId, "metricFields");
   const dimensionCollection = getUserCollection(userId, "dimensions");
   const budgetCollection = getUserCollection(userId, "budgetVersions");
+  const dashboardCollection = getUserCollection(userId, "dashboards");
+  const widgetCollection = getUserCollection(userId, "dashboardWidgets");
+  const goalCollection = getUserCollection(userId, "goalVersions");
 
-  if (!metricCollection || !fieldCollection || !dimensionCollection || !budgetCollection) {
+  if (!metricCollection || !fieldCollection || !dimensionCollection || !budgetCollection || !dashboardCollection || !widgetCollection || !goalCollection) {
     throw new Error("Firebase config is missing.");
   }
 
-  const [metricsSnapshot, fieldsSnapshot, dimensionsSnapshot, budgetsSnapshot] = await Promise.all([
+  const [metricsSnapshot, fieldsSnapshot, dimensionsSnapshot, budgetsSnapshot, dashboardsSnapshot, widgetsSnapshot, goalsSnapshot] = await Promise.all([
     getDocs(metricCollection),
     getDocs(fieldCollection),
     getDocs(dimensionCollection),
-    getDocs(budgetCollection)
+    getDocs(budgetCollection),
+    getDocs(dashboardCollection),
+    getDocs(widgetCollection),
+    getDocs(goalCollection)
   ]);
 
   return {
     metrics: metricsSnapshot.docs.map((doc) => doc.data()).filter((metric) => !metric.archived),
     fields: fieldsSnapshot.docs.map((doc) => doc.data()).filter((field) => !field.archived),
     dimensions: dimensionsSnapshot.docs.map((doc) => doc.data()).filter((dimension) => !dimension.archived),
-    budgetVersions: budgetsSnapshot.docs.map((doc) => doc.data())
+    budgetVersions: budgetsSnapshot.docs.map((doc) => doc.data()),
+    dashboards: dashboardsSnapshot.docs.map((doc) => doc.data()),
+    dashboardWidgets: widgetsSnapshot.docs.map((doc) => doc.data()),
+    goalVersions: goalsSnapshot.docs.map((doc) => doc.data())
   };
 }
 

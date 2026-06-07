@@ -6,6 +6,7 @@ import { PlaceholderPage } from "../components/PlaceholderPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 import { QuickEntryPage } from "../features/entries/QuickEntryPage";
 import { FullEntryPage } from "../features/entries/FullEntryPage";
+import { DashboardPage } from "../features/dashboard/DashboardPage";
 
 const routerBasename = import.meta.env.BASE_URL === "/" ? "/" : import.meta.env.BASE_URL.replace(/\/$/, "");
 
@@ -16,10 +17,7 @@ export function App() {
         <Routes>
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
-            <Route
-              path="/dashboard"
-              element={<PlaceholderPage title="Dashboard" description="Configurable KPI widgets will render here." />}
-            />
+            <Route path="/dashboard" element={<DashboardPage />} />
             <Route path="/today" element={<QuickEntryPage />} />
             <Route path="/logs" element={<FullEntryPage />} />
             <Route

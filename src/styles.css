@@ -254,6 +254,205 @@ a {
   margin-top: 30px;
 }
 
+.dashboard-page {
+  display: grid;
+  gap: 22px;
+  max-width: 1180px;
+}
+
+.dashboard-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+  gap: 16px;
+}
+
+.widget-card {
+  display: grid;
+  gap: 16px;
+  min-height: 180px;
+  padding: 18px;
+  border: 1px solid #26323b;
+  border-radius: 8px;
+  background: #151b21;
+}
+
+.hidden-widget {
+  opacity: 0.62;
+}
+
+.widget-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.widget-card h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.widget-card p {
+  margin: 0;
+}
+
+.widget-actions {
+  display: flex;
+  gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.hidden-label {
+  display: inline-block;
+  margin-top: 6px;
+  color: #facc15;
+  font-size: 0.78rem;
+}
+
+.kpi-widget {
+  display: grid;
+  gap: 8px;
+  align-content: end;
+}
+
+.kpi-widget strong,
+.progress-widget strong {
+  font-size: 2rem;
+  letter-spacing: 0;
+}
+
+.kpi-widget span {
+  color: #adc0cc;
+}
+
+.progress-widget {
+  display: grid;
+  gap: 12px;
+}
+
+.progress-track {
+  height: 12px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: #0f151a;
+}
+
+.progress-track span {
+  display: block;
+  height: 100%;
+  border-radius: inherit;
+  background: #7dd3a8;
+}
+
+.widget-meta-row {
+  display: flex;
+  gap: 10px;
+  flex-wrap: wrap;
+  color: #adc0cc;
+  font-size: 0.86rem;
+}
+
+.widget-table-wrap {
+  overflow-x: auto;
+}
+
+.widget-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.86rem;
+}
+
+.widget-table th,
+.widget-table td {
+  border-bottom: 1px solid #26323b;
+  padding: 8px;
+  text-align: left;
+}
+
+.bar-widget {
+  min-height: 220px;
+}
+
+.budget-widget,
+.budget-category-list {
+  display: grid;
+  gap: 10px;
+}
+
+.budget-category-list div {
+  display: grid;
+  grid-template-columns: 1fr auto auto;
+  gap: 8px;
+  align-items: center;
+}
+
+.budget-category-list em {
+  color: #adc0cc;
+  font-style: normal;
+  font-size: 0.82rem;
+}
+
+.alerts-list {
+  margin: 0;
+  padding-left: 18px;
+  color: #fecdd3;
+}
+
+.widget-config-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #26323b;
+  border-radius: 8px;
+  background: #101820;
+}
+
+.widget-config-panel h2 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 1.1rem;
+  letter-spacing: 0;
+}
+
+.widget-config-panel label,
+.toggle-grid label {
+  display: grid;
+  gap: 7px;
+  color: #c7d6df;
+  font-size: 0.88rem;
+}
+
+.widget-config-panel input,
+.widget-config-panel select {
+  width: 100%;
+  border: 1px solid #33424d;
+  border-radius: 8px;
+  background: #0f151a;
+  color: #eef4f8;
+  font: inherit;
+  padding: 10px 11px;
+}
+
+.toggle-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+  grid-column: 1 / -1;
+  gap: 10px;
+}
+
+.toggle-grid label {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.toggle-grid input {
+  width: auto;
+}
+
 .section-heading {
   display: flex;
   align-items: flex-start;
@@ -550,6 +749,13 @@ a {
   font-weight: 700;
 }
 
+.secondary-button.compact,
+.danger-button.compact {
+  min-height: 30px;
+  padding-inline: 8px;
+  font-size: 0.78rem;
+}
+
 .secondary-button {
   border: 1px solid #33424d;
   background: #19232b;
@@ -622,6 +828,7 @@ a {
   .metric-form-header,
   .page-heading,
   .log-card-header,
+  .widget-card-header,
   .section-heading,
   .category-card-header {
     flex-direction: column;
