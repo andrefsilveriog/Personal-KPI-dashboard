@@ -1,5 +1,5 @@
 import { addDoc, getDocs, setDoc } from "firebase/firestore";
-import type { Dimension, Metric, MetricEntry, MetricField } from "../../types/kpi";
+import type { BudgetVersion, Dimension, Metric, MetricEntry, MetricField } from "../../types/kpi";
 import { getUserCollection, getUserDocument } from "../../lib/firebase/collections";
 import { computeCalculatedValues } from "./entryCalculations";
 import { resolveEntryPeriod, todayInputValue } from "./entryPeriods";
@@ -8,27 +8,31 @@ export type KpiMetadata = {
   metrics: Metric[];
   fields: MetricField[];
   dimensions: Dimension[];
+  budgetVersions: BudgetVersion[];
 };
 
 export async function fetchKpiMetadata(userId: string): Promise<KpiMetadata> {
   const metricCollection = getUserCollection(userId, "metrics");
   const fieldCollection = getUserCollection(userId, "metricFields");
   const dimensionCollection = getUserCollection(userId, "dimensions");
+  const budgetCollection = getUserCollection(userId, "budgetVersions");
 
-  if (!metricCollection || !fieldCollection || !dimensionCollection) {
+  if (!metricCollection || !fieldCollection || !dimensionCollection || !budgetCollection) {
     throw new Error("Firebase config is missing.");
   }
 
-  const [metricsSnapshot, fieldsSnapshot, dimensionsSnapshot] = await Promise.all([
+  const [metricsSnapshot, fieldsSnapshot, dimensionsSnapshot, budgetsSnapshot] = await Promise.all([
     getDocs(metricCollection),
     getDocs(fieldCollection),
-    getDocs(dimensionCollection)
+    getDocs(dimensionCollection),
+    getDocs(budgetCollection)
   ]);
 
   return {
     metrics: metricsSnapshot.docs.map((doc) => doc.data()).filter((metric) => !metric.archived),
     fields: fieldsSnapshot.docs.map((doc) => doc.data()).filter((field) => !field.archived),
-    dimensions: dimensionsSnapshot.docs.map((doc) => doc.data()).filter((dimension) => !dimension.archived)
+    dimensions: dimensionsSnapshot.docs.map((doc) => doc.data()).filter((dimension) => !dimension.archived),
+    budgetVersions: budgetsSnapshot.docs.map((doc) => doc.data())
   };
 }
 

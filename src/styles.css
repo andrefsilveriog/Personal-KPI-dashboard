@@ -101,9 +101,12 @@ a {
 }
 
 .placeholder-page,
-.settings-page,
 .entry-page {
   max-width: 760px;
+}
+
+.settings-page {
+  max-width: 1120px;
 }
 
 .placeholder-page h1,
@@ -243,6 +246,154 @@ a {
 .create-entry-panel summary {
   cursor: pointer;
   font-weight: 700;
+}
+
+.ledger-section {
+  display: grid;
+  gap: 18px;
+  margin-top: 30px;
+}
+
+.section-heading {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 18px;
+}
+
+.section-heading h2 {
+  margin: 0;
+  font-size: 1.45rem;
+  letter-spacing: 0;
+}
+
+.ledger-summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.summary-tile,
+.ledger-form,
+.category-card {
+  border: 1px solid #26323b;
+  border-radius: 8px;
+  background: #151b21;
+}
+
+.summary-tile {
+  display: grid;
+  gap: 8px;
+  padding: 16px;
+}
+
+.summary-tile span {
+  color: #91a4b2;
+  font-size: 0.82rem;
+}
+
+.summary-tile strong {
+  color: #eef4f8;
+  font-size: 1.2rem;
+}
+
+.ledger-form {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  padding: 16px;
+}
+
+.ledger-form h3 {
+  grid-column: 1 / -1;
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.ledger-form label {
+  display: grid;
+  gap: 7px;
+  color: #c7d6df;
+  font-size: 0.88rem;
+}
+
+.ledger-form input,
+.ledger-form select {
+  width: 100%;
+  border: 1px solid #33424d;
+  border-radius: 8px;
+  background: #0f151a;
+  color: #eef4f8;
+  font: inherit;
+  padding: 10px 11px;
+}
+
+.ledger-form input[type="color"] {
+  min-height: 42px;
+  padding: 4px;
+}
+
+.category-list {
+  display: grid;
+  gap: 14px;
+}
+
+.category-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+}
+
+.category-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.category-card-header > div:first-child {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 10px;
+  align-items: center;
+}
+
+.category-card h3 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.category-card p {
+  grid-column: 2;
+  margin: 0;
+}
+
+.category-swatch {
+  display: inline-block;
+  width: 18px;
+  height: 18px;
+  border-radius: 6px;
+}
+
+.budget-history {
+  border-top: 1px solid #26323b;
+  padding-top: 12px;
+}
+
+.budget-history summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
+.history-row {
+  display: grid;
+  grid-template-columns: minmax(110px, auto) minmax(180px, 1fr) minmax(100px, 1fr);
+  gap: 10px;
+  padding: 8px 0;
+  color: #c7d6df;
+  font-size: 0.88rem;
 }
 
 .metric-form {
@@ -470,7 +621,13 @@ a {
 
   .metric-form-header,
   .page-heading,
-  .log-card-header {
+  .log-card-header,
+  .section-heading,
+  .category-card-header {
     flex-direction: column;
+  }
+
+  .history-row {
+    grid-template-columns: 1fr;
   }
 }

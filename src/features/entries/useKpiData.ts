@@ -14,7 +14,8 @@ export type KpiDataState = {
 const emptyMetadata: KpiMetadata = {
   metrics: [],
   fields: [],
-  dimensions: []
+  dimensions: [],
+  budgetVersions: []
 };
 
 export function useKpiData(): KpiDataState {
