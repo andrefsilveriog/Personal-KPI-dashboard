@@ -5,10 +5,12 @@ import { AuthProvider } from "../lib/firebase/AuthProvider";
 import { PlaceholderPage } from "../components/PlaceholderPage";
 import { SettingsPage } from "../features/settings/SettingsPage";
 
+const routerBasename = import.meta.env.BASE_URL === "/" ? "/" : import.meta.env.BASE_URL.replace(/\/$/, "");
+
 export function App() {
   return (
     <AuthProvider>
-      <BrowserRouter basename={import.meta.env.BASE_URL}>
+      <BrowserRouter basename={routerBasename}>
         <Routes>
           <Route element={<AppLayout />}>
             <Route index element={<Navigate to="/dashboard" replace />} />
