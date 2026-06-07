@@ -60,6 +60,7 @@ export type SaveMetricEntryInput = {
   values: MetricEntry["values"];
   entryDateValue?: string;
   existingEntries: MetricEntry[];
+  entryToUpdate?: MetricEntry;
 };
 
 export async function saveMetricEntry(input: SaveMetricEntryInput): Promise<MetricEntry> {
@@ -67,7 +68,9 @@ export async function saveMetricEntry(input: SaveMetricEntryInput): Promise<Metr
   const period = resolveEntryPeriod(input.metric, entryDateValue);
   const calculatedValues = computeCalculatedValues(input.fields, input.values);
   const now = new Date().toISOString();
-  const existingEntry = input.metric.allowMultipleEntriesPerPeriod
+  const existingEntry = input.entryToUpdate
+    ? input.entryToUpdate
+    : input.metric.allowMultipleEntriesPerPeriod
     ? undefined
     : findExistingPeriodEntry(input.existingEntries, input.metric, period.periodStart, period.periodEnd);
 
@@ -114,4 +117,21 @@ export async function saveMetricEntry(input: SaveMetricEntryInput): Promise<Metr
   const savedEntry = { ...entry, id: documentRef.id };
   await setDoc(documentRef, savedEntry);
   return savedEntry;
+}
+
+export async function archiveMetricEntry(userId: string, entry: MetricEntry): Promise<MetricEntry> {
+  const documentRef = getUserDocument(userId, "metricEntries", entry.id);
+
+  if (!documentRef) {
+    throw new Error("Firebase config is missing.");
+  }
+
+  const archivedEntry: MetricEntry = {
+    ...entry,
+    archived: true,
+    updatedAt: new Date().toISOString()
+  };
+
+  await setDoc(documentRef, archivedEntry);
+  return archivedEntry;
 }

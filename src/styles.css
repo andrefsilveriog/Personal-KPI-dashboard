@@ -142,6 +142,109 @@ a {
   padding: 10px 12px;
 }
 
+.filters-panel {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 14px;
+  padding: 16px;
+  border: 1px solid #26323b;
+  border-radius: 8px;
+  background: #151b21;
+}
+
+.filters-panel label {
+  display: grid;
+  gap: 7px;
+  color: #c7d6df;
+  font-size: 0.88rem;
+}
+
+.filters-panel input,
+.filters-panel select {
+  width: 100%;
+  border: 1px solid #33424d;
+  border-radius: 8px;
+  background: #0f151a;
+  color: #eef4f8;
+  font: inherit;
+  padding: 10px 11px;
+}
+
+.logs-list {
+  display: grid;
+  gap: 14px;
+}
+
+.log-card {
+  display: grid;
+  gap: 14px;
+  padding: 18px;
+  border: 1px solid #26323b;
+  border-radius: 8px;
+  background: #151b21;
+}
+
+.log-card-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.log-card h2 {
+  margin: 0 0 4px;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.log-card p {
+  margin: 0;
+}
+
+.log-actions {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.log-values {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+  gap: 12px;
+  margin: 0;
+}
+
+.log-values div {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.log-values dt {
+  color: #91a4b2;
+  font-size: 0.78rem;
+}
+
+.log-values dd {
+  margin: 0;
+  color: #eef4f8;
+  overflow-wrap: anywhere;
+}
+
+.create-entry-panel {
+  display: grid;
+  gap: 16px;
+  padding: 18px;
+  border: 1px solid #26323b;
+  border-radius: 8px;
+  background: #101820;
+}
+
+.create-entry-panel summary {
+  cursor: pointer;
+  font-weight: 700;
+}
+
 .metric-form {
   display: grid;
   gap: 18px;
@@ -286,6 +389,34 @@ a {
   font-weight: 700;
 }
 
+.secondary-button,
+.danger-button {
+  min-height: 38px;
+  border-radius: 8px;
+  padding: 0 12px;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 700;
+}
+
+.secondary-button {
+  border: 1px solid #33424d;
+  background: #19232b;
+  color: #d8e6ee;
+}
+
+.danger-button {
+  border: 1px solid #7f2d38;
+  background: #35161c;
+  color: #fecdd3;
+}
+
+.secondary-button:disabled,
+.danger-button:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+
 .primary-button:disabled {
   cursor: not-allowed;
   opacity: 0.55;
@@ -338,7 +469,8 @@ a {
   }
 
   .metric-form-header,
-  .page-heading {
+  .page-heading,
+  .log-card-header {
     flex-direction: column;
   }
 }

@@ -12,6 +12,8 @@ type DynamicMetricFormProps = {
   dimensions: Dimension[];
   entries: MetricEntry[];
   mode: "quick" | "full";
+  entryToEdit?: MetricEntry;
+  onCancel?: () => void;
   onSaved: () => Promise<void>;
 };
 
@@ -39,20 +41,42 @@ function findExistingEntry(metric: Metric, entries: MetricEntry[], entryDateValu
   );
 }
 
-export function DynamicMetricForm({ userId, metric, fields, dimensions, entries, mode, onSaved }: DynamicMetricFormProps) {
-  const [entryDateValue, setEntryDateValue] = useState(todayInputValue());
+function entryDateInputValue(entry: MetricEntry | undefined): string {
+  return entry ? entry.entryDate.slice(0, 10) : todayInputValue();
+}
+
+export function DynamicMetricForm({
+  userId,
+  metric,
+  fields,
+  dimensions,
+  entries,
+  mode,
+  entryToEdit,
+  onCancel,
+  onSaved
+}: DynamicMetricFormProps) {
+  const [entryDateValue, setEntryDateValue] = useState(entryDateInputValue(entryToEdit));
   const relevantFields = useMemo(() => visibleFields(fields, mode), [fields, mode]);
-  const existingEntry = metric.allowMultipleEntriesPerPeriod ? undefined : findExistingEntry(metric, entries, entryDateValue);
-  const [values, setValues] = useState<EntryValues>(() => buildInitialValues(relevantFields, existingEntry?.values));
+  const existingEntry = entryToEdit ?? (metric.allowMultipleEntriesPerPeriod ? undefined : findExistingEntry(metric, entries, entryDateValue));
+  const existingValues = useMemo(
+    () => (existingEntry ? { ...existingEntry.values, ...existingEntry.calculatedValues } : undefined),
+    [existingEntry]
+  );
+  const [values, setValues] = useState<EntryValues>(() => buildInitialValues(relevantFields, existingValues));
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [saveState, setSaveState] = useState<SaveState>({ status: "idle", message: null });
   const calculatedValues = useMemo(() => computeCalculatedValues(fields, values), [fields, values]);
 
   useEffect(() => {
-    setValues(buildInitialValues(relevantFields, existingEntry?.values));
+    setEntryDateValue(entryDateInputValue(entryToEdit));
+  }, [entryToEdit]);
+
+  useEffect(() => {
+    setValues(buildInitialValues(relevantFields, existingValues));
     setErrors({});
     setSaveState({ status: "idle", message: existingEntry ? "Loaded existing entry for this period." : null });
-  }, [existingEntry, relevantFields]);
+  }, [existingEntry, existingValues, relevantFields]);
 
   function handleChange(fieldKey: string, value: EntryValues[string]) {
     setValues((currentValues) => ({
@@ -81,13 +105,15 @@ export function DynamicMetricForm({ userId, metric, fields, dimensions, entries,
         fields,
         values,
         entryDateValue,
-        existingEntries: entries
+        existingEntries: entries,
+        entryToUpdate: entryToEdit
       });
       await onSaved();
       setSaveState({
         status: "success",
         message: metric.allowMultipleEntriesPerPeriod ? "Entry saved." : "Entry saved for this period."
       });
+      onCancel?.();
     } catch (error) {
       setSaveState({ status: "error", message: error instanceof Error ? error.message : "Could not save entry." });
     }
@@ -123,6 +149,11 @@ export function DynamicMetricForm({ userId, metric, fields, dimensions, entries,
         <button className="primary-button" disabled={saveState.status === "saving"} type="submit">
           {saveState.status === "saving" ? "Saving..." : existingEntry ? "Update entry" : "Save entry"}
         </button>
+        {onCancel && (
+          <button className="secondary-button" type="button" onClick={onCancel}>
+            Cancel
+          </button>
+        )}
         {saveState.message && <span className={`inline-status ${saveState.status}`}>{saveState.message}</span>}
       </div>
     </form>
