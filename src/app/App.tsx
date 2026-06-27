@@ -404,7 +404,7 @@ function DashboardView({
 
       <section className="metric-grid compact-metrics">
         <MetricCard label="Workout" value={`${weekly.workoutSessions}/${weekly.workoutTarget}`} detail={`Avg quality ${weekly.averageWorkoutQuality?.toFixed(1) ?? "-"} · ${weekly.hitWorkoutTarget ? "Target hit" : "Not yet"}`} progress={weekly.workoutSessions / weekly.workoutTarget} tone={weekly.hitWorkoutTarget ? "good" : "warn"} onClick={() => onLogMetric("workout")} />
-        <MetricCard label="Habit score" value={weekly.averageHabitScore.toFixed(1)} detail="Out of 5 daily" progress={weekly.averageHabitScore / 5} onClick={() => onLogMetric("habit")} />
+        <MetricCard label="Habit score" value={weekly.averageHabitScore.toFixed(1)} detail="Out of 6 daily" progress={weekly.averageHabitScore / 6} onClick={() => onLogMetric("habit")} />
         <MetricCard label="Antihistamine" value={`${weekly.antihistamineTaken}/${weekly.antihistamineTarget}`} detail="Daily dose" progress={weekly.antihistamineTaken / weekly.antihistamineTarget} tone={weekly.antihistamineTaken >= weekly.antihistamineTarget ? "good" : "warn"} onClick={() => onLogMetric("antihistamine")} />
         <MetricCard label="Perfect macros" value={String(weekly.perfectMacroDays)} detail={`${weekly.nutritionFullyLogged} fully logged`} progress={weekly.perfectMacroDays / 7} tone={weekly.perfectMacroDays >= 4 ? "good" : "warn"} onClick={() => onLogMetric("nutrition")} />
         <MetricCard label="Budgets" value={`${overBudget} over`} detail={`${nearBudget} near limit`} tone={overBudget ? "bad" : nearBudget ? "warn" : "good"} onClick={() => onLogMetric("ledger")} />
@@ -460,7 +460,8 @@ function TodayView({ data, updateData }: { data: LifeDashboardData; updateData: 
     flossed: "Yes",
     bedroomTidy: "Yes",
     deskTidy: "Yes",
-    clothesAway: "Yes"
+    clothesAway: "Yes",
+    weight: "No"
   });
   const [nutrition, setNutrition] = useState<NutritionEntry>(() => data.nutrition.find((entry) => entry.date === today) ?? { date: today, logged: "Yes", carbs: "", protein: "", fat: "" });
 
@@ -496,6 +497,7 @@ function TodayView({ data, updateData }: { data: LifeDashboardData; updateData: 
         <Field label="Bedroom"><SelectYesNo value={habit.bedroomTidy} onChange={(value) => setHabit({ ...habit, bedroomTidy: value })} /></Field>
         <Field label="Desk"><SelectYesNo value={habit.deskTidy} onChange={(value) => setHabit({ ...habit, deskTidy: value })} /></Field>
         <Field label="Clothes"><SelectYesNo value={habit.clothesAway} onChange={(value) => setHabit({ ...habit, clothesAway: value })} /></Field>
+        <Field label="Weight"><SelectYesNo value={habit.weight} onChange={(value) => setHabit({ ...habit, weight: value })} /></Field>
       </EntryPanel>
 
       <EntryPanel title="Nutrition" onSubmit={saveNutrition}>
@@ -864,6 +866,10 @@ function buildHabitProgressRows(data: LifeDashboardData, selectedWeek: number): 
     {
       label: "Clothes",
       segments: weekDates.map((date) => habitYesNoSegment(date, habitsByDate.get(date)?.clothesAway))
+    },
+    {
+      label: "Weight",
+      segments: weekDates.map((date) => habitYesNoSegment(date, habitsByDate.get(date)?.weight))
     }
   ];
 }
@@ -1052,6 +1058,7 @@ function MetricLogModal({
             <Field label="Bedroom"><SelectYesNo value={habit.bedroomTidy} onChange={(value) => setHabit({ ...habit, bedroomTidy: value })} /></Field>
             <Field label="Desk"><SelectYesNo value={habit.deskTidy} onChange={(value) => setHabit({ ...habit, deskTidy: value })} /></Field>
             <Field label="Clothes"><SelectYesNo value={habit.clothesAway} onChange={(value) => setHabit({ ...habit, clothesAway: value })} /></Field>
+            <Field label="Weight"><SelectYesNo value={habit.weight} onChange={(value) => setHabit({ ...habit, weight: value })} /></Field>
             <button className="primary-button" type="submit">Save habits</button>
           </form>
         )}
@@ -1098,7 +1105,8 @@ function defaultHabitEntry(): HabitEntry {
     flossed: "Yes",
     bedroomTidy: "Yes",
     deskTidy: "Yes",
-    clothesAway: "Yes"
+    clothesAway: "Yes",
+    weight: "No"
   };
 }
 
@@ -1534,7 +1542,8 @@ function loadData(): LifeDashboardData {
       ...parsed,
       habits: (parsed.habits ?? initialData.habits).map((entry) => ({
         ...entry,
-        antihistamine: entry.antihistamine ?? "No"
+        antihistamine: entry.antihistamine ?? "No",
+        weight: entry.weight ?? "No"
       })),
       config: {
         ...defaultConfig,

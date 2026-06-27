@@ -25,6 +25,8 @@ describe("life dashboard calculations", () => {
     expect(summary.brushedOnce).toBe(1);
     expect(summary.antihistamineTaken).toBe(4);
     expect(summary.antihistamineTarget).toBe(7);
+    expect(summary.weight).toBe(4);
+    expect(summary.averageHabitScore).toBe(4.9);
     expect(summary.perfectMacroDays).toBe(4);
   });
 

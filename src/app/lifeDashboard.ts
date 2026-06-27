@@ -19,6 +19,7 @@ export type HabitEntry = {
   bedroomTidy: YesNo;
   deskTidy: YesNo;
   clothesAway: YesNo;
+  weight: YesNo;
 };
 
 export type NutritionEntry = {
@@ -72,6 +73,7 @@ export type WeeklySummary = {
   bedroomTidy: number;
   deskTidy: number;
   clothesAway: number;
+  weight: number;
   averageHabitScore: number;
   nutritionFullyLogged: number;
   nutritionPartiallyLogged: number;
@@ -124,11 +126,11 @@ export const initialData: LifeDashboardData = {
     { date: "2026-06-12", went: "No", quality: "", notes: "" }
   ],
   habits: [
-    { date: "2026-06-08", antihistamine: "Yes", brushed: "Yes", flossed: "Yes", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "Yes" },
-    { date: "2026-06-09", antihistamine: "Yes", brushed: "Once", flossed: "Yes", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "Yes" },
-    { date: "2026-06-10", antihistamine: "Yes", brushed: "Yes", flossed: "No", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "No" },
-    { date: "2026-06-11", antihistamine: "No", brushed: "Yes", flossed: "Yes", bedroomTidy: "No", deskTidy: "Yes", clothesAway: "Yes" },
-    { date: "2026-06-12", antihistamine: "Yes", brushed: "No", flossed: "Yes", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "Yes" }
+    { date: "2026-06-08", antihistamine: "Yes", brushed: "Yes", flossed: "Yes", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "Yes", weight: "Yes" },
+    { date: "2026-06-09", antihistamine: "Yes", brushed: "Once", flossed: "Yes", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "Yes", weight: "Yes" },
+    { date: "2026-06-10", antihistamine: "Yes", brushed: "Yes", flossed: "No", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "No", weight: "No" },
+    { date: "2026-06-11", antihistamine: "No", brushed: "Yes", flossed: "Yes", bedroomTidy: "No", deskTidy: "Yes", clothesAway: "Yes", weight: "Yes" },
+    { date: "2026-06-12", antihistamine: "Yes", brushed: "No", flossed: "Yes", bedroomTidy: "Yes", deskTidy: "Yes", clothesAway: "Yes", weight: "Yes" }
   ],
   nutrition: [
     { date: "2026-06-08", logged: "Yes", carbs: 219, protein: 157, fat: 58 },
@@ -173,7 +175,7 @@ export function toMoney(value: number) {
 
 export function habitScore(entry: HabitEntry) {
   const brush = entry.brushed === "Yes" ? 1 : entry.brushed === "Once" ? 0.5 : 0;
-  const others = [entry.flossed, entry.bedroomTidy, entry.deskTidy, entry.clothesAway].filter((value) => value === "Yes").length;
+  const others = [entry.flossed, entry.bedroomTidy, entry.deskTidy, entry.clothesAway, entry.weight].filter((value) => value === "Yes").length;
   return brush + others;
 }
 
@@ -229,6 +231,7 @@ export function summarizeWeek(data: LifeDashboardData, week: number): WeeklySumm
     bedroomTidy: habits.filter((entry) => entry.bedroomTidy === "Yes").length,
     deskTidy: habits.filter((entry) => entry.deskTidy === "Yes").length,
     clothesAway: habits.filter((entry) => entry.clothesAway === "Yes").length,
+    weight: habits.filter((entry) => entry.weight === "Yes").length,
     averageHabitScore: habits.length ? average(habits.map(habitScore)) : 0,
     nutritionFullyLogged: nutrition.filter((entry) => entry.logged === "Yes").length,
     nutritionPartiallyLogged: nutrition.filter((entry) => entry.logged === "Partial").length,

@@ -61,7 +61,7 @@ export async function loadDashboardData(userId: string): Promise<LifeDashboardDa
       budgets: { ...defaultConfig.budgets, ...settings.budgets }
     },
     workouts: workoutsSnapshot.docs.map((entry) => stripMetadata(entry.data() as WorkoutEntry)),
-    habits: habitsSnapshot.docs.map((entry) => stripMetadata(entry.data() as HabitEntry)),
+    habits: habitsSnapshot.docs.map((entry) => normalizeHabitEntry(stripMetadata(entry.data() as HabitEntry))),
     nutrition: nutritionSnapshot.docs.map((entry) => stripMetadata(entry.data() as NutritionEntry)),
     spending: spendingSnapshot.docs.map((entry) => stripMetadata(entry.data() as SpendingEntry))
   };
@@ -128,6 +128,14 @@ function deleteDocsNotIn(ids: string[], currentIds: Set<string>, getRef: (id: st
 function stripMetadata<T extends Record<string, unknown>>(data: T): T {
   const { createdAt: _createdAt, updatedAt: _updatedAt, ...rest } = data;
   return rest as T;
+}
+
+function normalizeHabitEntry(entry: HabitEntry): HabitEntry {
+  return {
+    ...entry,
+    antihistamine: entry.antihistamine ?? "No",
+    weight: entry.weight ?? "No"
+  };
 }
 
 function withUpdatedAt<T extends Record<string, unknown>>(entry: T) {
