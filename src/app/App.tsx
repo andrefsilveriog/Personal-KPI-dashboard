@@ -1,4 +1,5 @@
 import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
 import {
   availableWeeks,
   defaultConfig,
@@ -17,6 +18,8 @@ import {
   weekLabel,
   WorkoutEntry
 } from "./lifeDashboard";
+import { auth, googleProvider, isFirebaseConfigured } from "../lib/firebase";
+import { loadDashboardData, replaceDashboardData } from "./lifeDashboardRepository";
 
 const storageKey = "life-dashboard-v2";
 const themeStorageKey = "life-dashboard-theme";
@@ -26,25 +29,87 @@ const currentMonth = today.slice(0, 7);
 type Tab = "dashboard" | "today" | "ledger" | "logs" | "settings";
 type Theme = "light" | "dark";
 type LogTarget = "workout" | "habit" | "antihistamine" | "nutrition" | "ledger";
+type SyncStatus = "local" | "loading" | "saving" | "synced" | "error";
 
 export function App() {
   const [data, setData] = useState(loadData);
   const [theme, setTheme] = useState<Theme>(loadTheme);
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [logTarget, setLogTarget] = useState<LogTarget | null>(null);
+  const [user, setUser] = useState<User | null>(null);
+  const [syncStatus, setSyncStatus] = useState<SyncStatus>(isFirebaseConfigured ? "loading" : "local");
+  const [syncError, setSyncError] = useState("");
+  const latestData = useRef(data);
   const weeks = availableWeeks(data);
   const [selectedWeek, setSelectedWeek] = useState(weeks[0] ?? 1);
   const weekly = useMemo(() => summarizeWeek(data, selectedWeek), [data, selectedWeek]);
   const budgets = useMemo(() => summarizeBudgets(data, currentMonth), [data]);
 
   useEffect(() => {
+    latestData.current = data;
+  }, [data]);
+
+  useEffect(() => {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem(themeStorageKey, theme);
   }, [theme]);
 
+  useEffect(() => {
+    if (!auth) {
+      setSyncStatus("local");
+      return;
+    }
+
+    return onAuthStateChanged(auth, async (nextUser) => {
+      setUser(nextUser);
+      setSyncError("");
+
+      if (!nextUser) {
+        setSyncStatus("local");
+        return;
+      }
+
+      setSyncStatus("loading");
+
+      try {
+        const remoteData = await loadDashboardData(nextUser.uid);
+
+        if (remoteData) {
+          latestData.current = remoteData;
+          setData(remoteData);
+          saveLocalData(remoteData);
+        } else {
+          await replaceDashboardData(nextUser.uid, latestData.current);
+        }
+
+        setSyncStatus("synced");
+      } catch (error) {
+        setSyncStatus("error");
+        setSyncError(error instanceof Error ? error.message : "Could not load Firebase data.");
+      }
+    });
+  }, []);
+
   function updateData(next: LifeDashboardData) {
+    latestData.current = next;
     setData(next);
-    localStorage.setItem(storageKey, JSON.stringify(next));
+    saveLocalData(next);
+
+    if (!user) {
+      setSyncStatus(isFirebaseConfigured ? "local" : "local");
+      return;
+    }
+
+    setSyncStatus("saving");
+    replaceDashboardData(user.uid, next)
+      .then(() => {
+        setSyncError("");
+        setSyncStatus("synced");
+      })
+      .catch((error) => {
+        setSyncStatus("error");
+        setSyncError(error instanceof Error ? error.message : "Could not save Firebase data.");
+      });
   }
 
   function resetDemoData() {
@@ -56,6 +121,32 @@ export function App() {
     setLogTarget(target);
   }
 
+  async function signIn() {
+    if (!auth) {
+      setSyncStatus("error");
+      setSyncError("Firebase config is missing. Paste the web app config into .env.local first.");
+      return;
+    }
+
+    setSyncStatus("loading");
+    setSyncError("");
+
+    try {
+      await signInWithPopup(auth, googleProvider);
+    } catch (error) {
+      setSyncStatus("error");
+      setSyncError(error instanceof Error ? error.message : "Could not sign in.");
+    }
+  }
+
+  async function signOutOfFirebase() {
+    if (!auth) {
+      return;
+    }
+
+    await signOut(auth);
+  }
+
   return (
     <main className="shell">
       <div className={`app-content ${logTarget ? "is-blurred" : ""}`}>
@@ -65,6 +156,13 @@ export function App() {
             <p>Weekly habits, monthly budgets, fast ledger entry.</p>
           </div>
           <div className="topbar-actions">
+            <AuthControls
+              isConfigured={isFirebaseConfigured}
+              onSignIn={signIn}
+              onSignOut={signOutOfFirebase}
+              status={syncStatus}
+              user={user}
+            />
             <button className="ghost-button" type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
               {theme === "dark" ? "Light mode" : "Dark mode"}
             </button>
@@ -72,6 +170,11 @@ export function App() {
               Reset sample data
             </button>
           </div>
+          {(syncError || !isFirebaseConfigured) && (
+            <p className={syncError ? "sync-message is-error" : "sync-message"}>
+              {syncError || "Firebase is not configured yet. Local browser storage is active."}
+            </p>
+          )}
         </header>
 
         <nav className="tabs" aria-label="Dashboard views">
@@ -112,6 +215,46 @@ export function App() {
         />
       )}
     </main>
+  );
+}
+
+function AuthControls({
+  isConfigured,
+  onSignIn,
+  onSignOut,
+  status,
+  user
+}: {
+  isConfigured: boolean;
+  onSignIn: () => void;
+  onSignOut: () => void;
+  status: SyncStatus;
+  user: User | null;
+}) {
+  const labelByStatus: Record<SyncStatus, string> = {
+    error: "Sync issue",
+    loading: "Loading",
+    local: isConfigured ? "Local only" : "Local",
+    saving: "Saving",
+    synced: "Synced"
+  };
+
+  return (
+    <div className="auth-controls">
+      <span className={`sync-pill sync-${status}`}>{labelByStatus[status]}</span>
+      {user ? (
+        <>
+          <span className="user-label">{user.displayName ?? user.email ?? "Signed in"}</span>
+          <button className="ghost-button" type="button" onClick={onSignOut}>
+            Sign out
+          </button>
+        </>
+      ) : (
+        <button className="ghost-button" disabled={!isConfigured} type="button" onClick={onSignIn}>
+          Sign in
+        </button>
+      )}
+    </div>
   );
 }
 
@@ -796,6 +939,10 @@ function upsertByDate<T extends { date: string }>(entries: T[], next: T) {
 
 function readNumber(value: string) {
   return value === "" ? "" : Number(value);
+}
+
+function saveLocalData(data: LifeDashboardData) {
+  localStorage.setItem(storageKey, JSON.stringify(data));
 }
 
 function loadData(): LifeDashboardData {

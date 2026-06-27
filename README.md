@@ -6,9 +6,9 @@ A simpler personal dashboard rebuilt from the working Excel sheet:
 - daily habit tracking
 - nutrition macro checks
 - monthly spending and budgets
-- local browser storage
+- local browser storage with optional Firebase sync
 
-The current version is intentionally local-first. No Firebase setup is required to run it.
+The current version is local-first. Firebase Auth and Firestore sync are wired in when `.env.local` has the Firebase web app config.
 
 ## Run
 
@@ -16,6 +16,17 @@ The current version is intentionally local-first. No Firebase setup is required 
 npm install
 npm run dev
 ```
+
+## Firebase
+
+See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
+
+Short version:
+
+- `.env.local` holds the existing Firebase web app config and is ignored by git.
+- Google sign-in syncs data under `users/{uid}` in Firestore.
+- `firestore.rules` contains the rules to paste/publish in Firebase Console.
+- If Firebase is not configured, the app stays usable with local browser storage.
 
 ## Checks
 
