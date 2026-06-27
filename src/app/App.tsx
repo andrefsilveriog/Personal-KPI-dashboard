@@ -792,7 +792,7 @@ function BudgetCategoryRow({
   );
 }
 
-type HabitSegmentTone = "good" | "warn" | "bad";
+type HabitSegmentTone = "good" | "warn" | "bad" | "empty";
 
 type HabitProgress = {
   label: string;
@@ -815,10 +815,10 @@ function HabitProgressRow({ row }: { row: HabitProgress }) {
       <div className="habit-segments">
         {row.segments.map((segment) => (
           <span
-            aria-label={`${segment.label}: ${segment.tone}`}
+            aria-label={`${segment.label}: ${habitSegmentStatus(segment.tone)}`}
             className={`habit-segment is-${segment.tone}`}
             key={segment.date}
-            title={`${segment.label}: ${segment.tone}`}
+            title={`${segment.label}: ${habitSegmentStatus(segment.tone)}`}
           />
         ))}
       </div>
@@ -835,7 +835,7 @@ function buildHabitProgressRows(data: LifeDashboardData, selectedWeek: number): 
       label: "Brushed",
       segments: weekDates.map((date) => {
         const brushed = habitsByDate.get(date)?.brushed;
-        const tone: HabitSegmentTone = brushed === "Yes" ? "good" : brushed === "Once" ? "warn" : "bad";
+        const tone: HabitSegmentTone = date >= today ? "empty" : brushed === "Yes" ? "good" : brushed === "Once" ? "warn" : "bad";
         return { date, label: format(parseISO(date), "EEE dd"), tone };
       })
     },
@@ -862,8 +862,19 @@ function habitYesNoSegment(date: string, value: "Yes" | "No" | undefined) {
   return {
     date,
     label: format(parseISO(date), "EEE dd"),
-    tone: value === "Yes" ? "good" as const : "bad" as const
+    tone: date >= today ? "empty" as const : value === "Yes" ? "good" as const : "bad" as const
   };
+}
+
+function habitSegmentStatus(tone: HabitSegmentTone) {
+  const labels: Record<HabitSegmentTone, string> = {
+    bad: "not logged or no",
+    empty: "not due yet",
+    good: "logged",
+    warn: "logged once"
+  };
+
+  return labels[tone];
 }
 
 function getSelectedWeekDates(data: LifeDashboardData, selectedWeek: number) {

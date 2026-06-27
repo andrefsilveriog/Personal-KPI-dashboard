@@ -548,12 +548,14 @@ button.metric-card:focus-visible,
 .habit-segments {
   display: grid;
   grid-template-columns: repeat(7, minmax(0, 1fr));
-  gap: 5px;
+  height: 10px;
+  overflow: hidden;
+  border-radius: 999px;
+  background: var(--track);
 }
 
 .habit-segment {
-  height: 10px;
-  border-radius: 999px;
+  height: 100%;
 }
 
 .habit-segment.is-good {
@@ -566,6 +568,10 @@ button.metric-card:focus-visible,
 
 .habit-segment.is-bad {
   background: var(--accent-bad);
+}
+
+.habit-segment.is-empty {
+  background: transparent;
 }
 
 .budget-panel {
