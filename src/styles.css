@@ -545,43 +545,18 @@ button.metric-card:focus-visible,
   color: var(--muted);
 }
 
-.habit-segments {
-  display: grid;
-  grid-template-columns: repeat(7, minmax(0, 1fr));
+.habit-progress-track {
+  position: relative;
+  width: 100%;
   height: 10px;
   overflow: hidden;
   border-radius: 999px;
   background: var(--track);
 }
 
-.habit-segment {
+.habit-progress-fill {
   height: 100%;
-}
-
-.habit-segment.is-fill-start {
-  border-bottom-left-radius: inherit;
-  border-top-left-radius: inherit;
-}
-
-.habit-segment.is-fill-end {
-  border-bottom-right-radius: inherit;
-  border-top-right-radius: inherit;
-}
-
-.habit-segment.is-good {
-  background: var(--accent-good);
-}
-
-.habit-segment.is-warn {
-  background: var(--accent-warn);
-}
-
-.habit-segment.is-bad {
-  background: var(--accent-bad);
-}
-
-.habit-segment.is-empty {
-  background: transparent;
+  border-radius: inherit;
 }
 
 .budget-panel {
