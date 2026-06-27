@@ -368,6 +368,9 @@ function DashboardView({
   const nearBudget = budgets.filter((budget) => budget.status === "Near").length;
   const totalBudget = budgets.reduce((total, entry) => total + entry.budget, 0);
   const totalSpent = budgets.reduce((total, entry) => total + entry.spent, 0);
+  const monthlySpending = data.spending.filter((entry) => entry.date.startsWith(currentMonth));
+  const creditSpent = monthlySpending.reduce((total, entry) => total + Number(entry.credit || 0), 0);
+  const cashSpent = monthlySpending.reduce((total, entry) => total + Number(entry.cash || 0), 0);
 
   return (
     <section className="dashboard-grid">
@@ -414,6 +417,10 @@ function DashboardView({
           <div className="panel-heading">
             <h2>Monthly Budgets</h2>
             <strong>{toMoney(totalSpent)} / {toMoney(totalBudget)}</strong>
+          </div>
+          <div className="budget-totals">
+            <span>Credit <strong>{toMoney(creditSpent)}</strong></span>
+            <span>Cash <strong>{toMoney(cashSpent)}</strong></span>
           </div>
           <BudgetBars budgets={budgets} />
         </div>

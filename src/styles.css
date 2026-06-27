@@ -511,6 +511,31 @@ button.metric-card:focus-visible,
   min-height: 0;
 }
 
+.budget-totals {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: -2px 0 10px;
+}
+
+.budget-totals span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  min-height: 30px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 0 10px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 750;
+}
+
+.budget-totals strong {
+  color: var(--text);
+}
+
 .panel-heading {
   display: flex;
   align-items: center;
