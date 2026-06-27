@@ -835,7 +835,7 @@ function buildHabitProgressRows(data: LifeDashboardData, selectedWeek: number): 
       label: "Brushed",
       segments: weekDates.map((date) => {
         const brushed = habitsByDate.get(date)?.brushed;
-        const tone: HabitSegmentTone = date >= today ? "empty" : brushed === "Yes" ? "good" : brushed === "Once" ? "warn" : "bad";
+        const tone: HabitSegmentTone = shouldScoreHabitDate(date, brushed) ? brushed === "Yes" ? "good" : brushed === "Once" ? "warn" : "bad" : "empty";
         return { date, label: format(parseISO(date), "EEE dd"), tone };
       })
     },
@@ -862,8 +862,12 @@ function habitYesNoSegment(date: string, value: "Yes" | "No" | undefined) {
   return {
     date,
     label: format(parseISO(date), "EEE dd"),
-    tone: date >= today ? "empty" as const : value === "Yes" ? "good" as const : "bad" as const
+    tone: shouldScoreHabitDate(date, value) ? value === "Yes" ? "good" as const : "bad" as const : "empty" as const
   };
+}
+
+function shouldScoreHabitDate(date: string, value: string | undefined) {
+  return date < today || (date === today && value !== undefined);
 }
 
 function habitSegmentStatus(tone: HabitSegmentTone) {
