@@ -189,7 +189,7 @@ export function App() {
         {chromeCollapsed ? (
           <header className="topbar topbar-collapsed">
             <div className="collapsed-clock">
-              <strong>{format(now, "dd/MM/yyyy")}</strong>
+              <strong>{format(now, "EEEE dd/MM/yyyy")}</strong>
               <span>{format(now, "HH:mm")}</span>
             </div>
             <div className="collapsed-week">
@@ -805,6 +805,8 @@ type HabitProgress = {
 
 function HabitProgressRow({ row }: { row: HabitProgress }) {
   const completed = row.segments.filter((segment) => segment.tone === "good").length;
+  const firstFilledIndex = row.segments.findIndex((segment) => segment.tone !== "empty");
+  const lastFilledIndex = row.segments.reduce((lastIndex, segment, index) => segment.tone === "empty" ? lastIndex : index, -1);
 
   return (
     <div className="habit-progress-row">
@@ -813,10 +815,15 @@ function HabitProgressRow({ row }: { row: HabitProgress }) {
         <strong>{completed}/7</strong>
       </div>
       <div className="habit-segments">
-        {row.segments.map((segment) => (
+        {row.segments.map((segment, index) => (
           <span
             aria-label={`${segment.label}: ${habitSegmentStatus(segment.tone)}`}
-            className={`habit-segment is-${segment.tone}`}
+            className={[
+              "habit-segment",
+              `is-${segment.tone}`,
+              firstFilledIndex === index ? "is-fill-start" : "",
+              lastFilledIndex === index ? "is-fill-end" : ""
+            ].filter(Boolean).join(" ")}
             key={segment.date}
             title={`${segment.label}: ${habitSegmentStatus(segment.tone)}`}
           />
