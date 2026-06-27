@@ -83,6 +83,28 @@ button {
   padding: 16px 22px;
 }
 
+.auth-shell {
+  display: grid;
+  min-height: 100vh;
+  place-items: center;
+  padding: 22px;
+}
+
+.auth-panel {
+  display: grid;
+  width: min(420px, 100%);
+  gap: 12px;
+}
+
+.auth-panel h1 {
+  margin-bottom: 0;
+}
+
+.auth-panel p {
+  margin-bottom: 0;
+  color: var(--muted);
+}
+
 .app-content {
   transition: filter 160ms ease, opacity 160ms ease;
 }

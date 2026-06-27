@@ -21,7 +21,7 @@ users/{uid}/spending/{entryId}
 - Local browser storage remains as fallback/cache.
 - First sign-in behavior:
   - If Firestore already has dashboard data, the app loads it.
-  - If Firestore is empty, the app uploads the current local dashboard data.
+  - If Firestore is empty, the app creates a blank dashboard with default settings.
 
 ## Firebase Console Checklist
 
@@ -106,6 +106,7 @@ Expected result:
 - Top bar shows a sync status pill.
 - If Firebase config is present, the Sign in button is enabled.
 - Sign in with Google.
+- A new Firestore user starts with no logged workouts, habits, nutrition, or spending.
 - Add or edit a metric.
 - Status should move through `Saving` and return to `Synced`.
 - Firestore should show documents under `users/{yourUserId}`.

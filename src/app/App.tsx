@@ -37,6 +37,7 @@ export function App() {
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [logTarget, setLogTarget] = useState<LogTarget | null>(null);
   const [user, setUser] = useState<User | null>(null);
+  const [authReady, setAuthReady] = useState(!isFirebaseConfigured);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isFirebaseConfigured ? "loading" : "local");
   const [syncError, setSyncError] = useState("");
   const latestData = useRef(data);
@@ -63,6 +64,7 @@ export function App() {
     return onAuthStateChanged(auth, async (nextUser) => {
       setUser(nextUser);
       setSyncError("");
+      setAuthReady(true);
 
       if (!nextUser) {
         setSyncStatus("local");
@@ -79,7 +81,11 @@ export function App() {
           setData(remoteData);
           saveLocalData(remoteData);
         } else {
-          await replaceDashboardData(nextUser.uid, latestData.current);
+          const blankData = createBlankData();
+          latestData.current = blankData;
+          setData(blankData);
+          saveLocalData(blankData);
+          await replaceDashboardData(nextUser.uid, blankData);
         }
 
         setSyncStatus("synced");
@@ -117,6 +123,12 @@ export function App() {
     setSelectedWeek(availableWeeks(initialData)[0] ?? 1);
   }
 
+  useEffect(() => {
+    if (!weeks.includes(selectedWeek)) {
+      setSelectedWeek(weeks[0] ?? currentIsoWeek());
+    }
+  }, [selectedWeek, weeks]);
+
   function openLogger(target: LogTarget) {
     setLogTarget(target);
   }
@@ -145,6 +157,14 @@ export function App() {
     }
 
     await signOut(auth);
+  }
+
+  if (isFirebaseConfigured && !authReady) {
+    return <LoadingScreen />;
+  }
+
+  if (isFirebaseConfigured && !user) {
+    return <SignInScreen onSignIn={signIn} syncError={syncError} />;
   }
 
   return (
@@ -218,6 +238,32 @@ export function App() {
   );
 }
 
+function LoadingScreen() {
+  return (
+    <main className="auth-shell">
+      <section className="auth-panel panel">
+        <h1>Life Dashboard</h1>
+        <p>Checking sign-in...</p>
+      </section>
+    </main>
+  );
+}
+
+function SignInScreen({ onSignIn, syncError }: { onSignIn: () => void; syncError: string }) {
+  return (
+    <main className="auth-shell">
+      <section className="auth-panel panel">
+        <h1>Life Dashboard</h1>
+        <p>Sign in to load your private dashboard.</p>
+        {syncError && <p className="sync-message is-error">{syncError}</p>}
+        <button className="primary-button" type="button" onClick={onSignIn}>
+          Sign in with Google
+        </button>
+      </section>
+    </main>
+  );
+}
+
 function AuthControls({
   isConfigured,
   onSignIn,
@@ -287,7 +333,7 @@ function DashboardView({
         <label>
           Week
           <select value={selectedWeek} onChange={(event) => setSelectedWeek(Number(event.target.value))}>
-            {weeks.map((week) => (
+            {(weeks.length ? weeks : [selectedWeek]).map((week) => (
               <option key={week} value={week}>
                 {weekLabel(week, data)}
               </option>
@@ -943,6 +989,23 @@ function readNumber(value: string) {
 
 function saveLocalData(data: LifeDashboardData) {
   localStorage.setItem(storageKey, JSON.stringify(data));
+}
+
+function createBlankData(): LifeDashboardData {
+  return {
+    config: defaultConfig,
+    workouts: [],
+    habits: [],
+    nutrition: [],
+    spending: []
+  };
+}
+
+function currentIsoWeek() {
+  return availableWeeks({
+    ...createBlankData(),
+    workouts: [{ date: today, went: "No", quality: "", notes: "" }]
+  })[0] ?? 1;
 }
 
 function loadData(): LifeDashboardData {
