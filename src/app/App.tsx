@@ -36,6 +36,7 @@ export function App() {
   const [theme, setTheme] = useState<Theme>(loadTheme);
   const [activeTab, setActiveTab] = useState<Tab>("dashboard");
   const [logTarget, setLogTarget] = useState<LogTarget | null>(null);
+  const [chromeCollapsed, setChromeCollapsed] = useState(false);
   const [user, setUser] = useState<User | null>(null);
   const [authReady, setAuthReady] = useState(!isFirebaseConfigured);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isFirebaseConfigured ? "loading" : "local");
@@ -118,9 +119,16 @@ export function App() {
       });
   }
 
-  function resetDemoData() {
-    updateData(initialData);
-    setSelectedWeek(availableWeeks(initialData)[0] ?? 1);
+  function clearAllData() {
+    const confirmed = window.confirm("Clear all dashboard data? This removes logs and resets settings to defaults.");
+
+    if (!confirmed) {
+      return;
+    }
+
+    const blankData = createBlankData();
+    updateData(blankData);
+    setSelectedWeek(currentIsoWeek());
   }
 
   useEffect(() => {
@@ -170,49 +178,77 @@ export function App() {
   return (
     <main className="shell">
       <div className={`app-content ${logTarget ? "is-blurred" : ""}`}>
-        <header className="topbar">
-          <div>
+        {chromeCollapsed ? (
+          <button
+            aria-label="Show controls"
+            className="chrome-restore-button"
+            type="button"
+            onClick={() => setChromeCollapsed(false)}
+          >
+            Show controls
+          </button>
+        ) : (
+          <>
+            <header className="topbar">
+              <div>
             <h1>Life Dashboard</h1>
-            <p>Weekly habits, monthly budgets, fast ledger entry.</p>
-          </div>
-          <div className="topbar-actions">
-            <AuthControls
-              isConfigured={isFirebaseConfigured}
-              onSignIn={signIn}
-              onSignOut={signOutOfFirebase}
-              status={syncStatus}
-              user={user}
-            />
-            <button className="ghost-button" type="button" onClick={() => setTheme(theme === "dark" ? "light" : "dark")}>
-              {theme === "dark" ? "Light mode" : "Dark mode"}
-            </button>
-            <button className="ghost-button" type="button" onClick={resetDemoData}>
-              Reset sample data
-            </button>
-          </div>
-          {(syncError || !isFirebaseConfigured) && (
-            <p className={syncError ? "sync-message is-error" : "sync-message"}>
-              {syncError || "Firebase is not configured yet. Local browser storage is active."}
-            </p>
-          )}
-        </header>
+              </div>
+              <div className="topbar-actions">
+                <AuthControls
+                  isConfigured={isFirebaseConfigured}
+                  onSignIn={signIn}
+                  onSignOut={signOutOfFirebase}
+                  status={syncStatus}
+                  user={user}
+                />
+                <button
+                  aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+                  className="ghost-button icon-button"
+                  title={theme === "dark" ? "Light mode" : "Dark mode"}
+                  type="button"
+                  onClick={() => setTheme(theme === "dark" ? "light" : "dark")}
+                >
+                  {theme === "dark" ? "☀" : "☾"}
+                </button>
+                <button className="danger-button" type="button" onClick={clearAllData}>
+                  Clear all data
+                </button>
+                <button
+                  aria-label="Hide controls"
+                  className="ghost-button icon-button"
+                  title="Hide controls"
+                  type="button"
+                  onClick={() => setChromeCollapsed(true)}
+                >
+                  ▴
+                </button>
+              </div>
+              {(syncError || !isFirebaseConfigured) && (
+                <p className={syncError ? "sync-message is-error" : "sync-message"}>
+                  {syncError || "Firebase is not configured yet. Local browser storage is active."}
+                </p>
+              )}
+            </header>
 
-        <nav className="tabs" aria-label="Dashboard views">
-          {(["dashboard", "today", "ledger", "logs", "settings"] as Tab[]).map((tab) => (
-            <button
-              className={activeTab === tab ? "tab is-active" : "tab"}
-              key={tab}
-              type="button"
-              onClick={() => setActiveTab(tab)}
-            >
-              {tab}
-            </button>
-          ))}
-        </nav>
+            <nav className="tabs" aria-label="Dashboard views">
+              {(["dashboard", "today", "ledger", "logs", "settings"] as Tab[]).map((tab) => (
+                <button
+                  className={activeTab === tab ? "tab is-active" : "tab"}
+                  key={tab}
+                  type="button"
+                  onClick={() => setActiveTab(tab)}
+                >
+                  {tab}
+                </button>
+              ))}
+            </nav>
+          </>
+        )}
 
         {activeTab === "dashboard" && (
           <DashboardView
             budgets={budgets}
+            chromeCollapsed={chromeCollapsed}
             data={data}
             onLogMetric={openLogger}
             selectedWeek={selectedWeek}
@@ -306,6 +342,7 @@ function AuthControls({
 
 type DashboardViewProps = {
   budgets: ReturnType<typeof summarizeBudgets>;
+  chromeCollapsed: boolean;
   data: LifeDashboardData;
   onLogMetric: (target: LogTarget) => void;
   selectedWeek: number;
@@ -315,6 +352,7 @@ type DashboardViewProps = {
 
 function DashboardView({
   budgets,
+  chromeCollapsed,
   data,
   onLogMetric,
   selectedWeek,
@@ -329,9 +367,9 @@ function DashboardView({
 
   return (
     <section className="dashboard-grid">
-      <div className="toolbar dashboard-toolbar">
+      {!chromeCollapsed && <div className="dashboard-filterbar">
         <label>
-          Week
+          <span className="sr-only">Week</span>
           <select value={selectedWeek} onChange={(event) => setSelectedWeek(Number(event.target.value))}>
             {(weeks.length ? weeks : [selectedWeek]).map((week) => (
               <option key={week} value={week}>
@@ -340,8 +378,8 @@ function DashboardView({
             ))}
           </select>
         </label>
-        <span className="toolbar-note">Budgets: {currentMonth}</span>
-      </div>
+        <span className="month-pill">{formatMonth(currentMonth)}</span>
+      </div>}
 
       <section className="metric-grid compact-metrics">
         <MetricCard label="Workout" value={`${weekly.workoutSessions}/${weekly.workoutTarget}`} detail={weekly.hitWorkoutTarget ? "Target hit" : "Not yet"} progress={weekly.workoutSessions / weekly.workoutTarget} tone={weekly.hitWorkoutTarget ? "good" : "warn"} onClick={() => onLogMetric("workout")} />
@@ -999,6 +1037,16 @@ function createBlankData(): LifeDashboardData {
     nutrition: [],
     spending: []
   };
+}
+
+function formatMonth(month: string) {
+  const [year, monthNumber] = month.split("-").map(Number);
+
+  if (!year || !monthNumber) {
+    return month;
+  }
+
+  return new Intl.DateTimeFormat("en", { month: "long", year: "numeric" }).format(new Date(year, monthNumber - 1));
 }
 
 function currentIsoWeek() {
