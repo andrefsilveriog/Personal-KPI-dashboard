@@ -1,55 +1,48 @@
 # Personal KPI Dashboard
 
-A metadata-driven personal KPI dashboard built with React, Vite, TypeScript, Firebase Auth, Firestore, Recharts, and React Grid Layout.
+A simpler personal dashboard rebuilt from the working Excel sheet:
 
-## Setup
+- weekly workout summary
+- daily habit tracking
+- nutrition macro checks
+- monthly spending and budgets
+- local browser storage with optional Firebase sync
 
-1. Install dependencies:
+The current version is local-first. Firebase Auth and Firestore sync are wired in when `.env.local` has the Firebase web app config.
 
-   ```bash
-   npm install
-   ```
+## Run
 
-2. Create a Firebase web app and enable Authentication. Anonymous auth is the current default sign-in method.
+```bash
+npm install
+npm run dev
+```
 
-3. Copy `.env.example` to `.env.local` and fill in the Firebase client config:
+## Firebase
 
-   ```bash
-   VITE_FIREBASE_API_KEY=
-   VITE_FIREBASE_AUTH_DOMAIN=
-   VITE_FIREBASE_PROJECT_ID=
-   VITE_FIREBASE_STORAGE_BUCKET=
-   VITE_FIREBASE_MESSAGING_SENDER_ID=
-   VITE_FIREBASE_APP_ID=
-   ```
+See [FIREBASE_SETUP.md](./FIREBASE_SETUP.md).
 
-4. Run the app:
+Short version:
 
-   ```bash
-   npm run dev
-   ```
+- `.env.local` holds the existing Firebase web app config and is ignored by git.
+- Google sign-in syncs data under `users/{uid}` in Firestore.
+- `firestore.rules` contains the rules to paste/publish in Firebase Console.
+- If Firebase is not configured, the app stays usable with local browser storage.
 
-## Scripts
+## Checks
 
-- `npm run dev` starts the local Vite server.
-- `npm run typecheck` runs TypeScript in strict mode.
-- `npm run test` runs Vitest.
-- `npm run build` typechecks, builds the app, and creates `dist/404.html` for GitHub Pages SPA fallback.
+```bash
+npm run typecheck
+npm test
+npm run build
+```
 
-## Project Shape
+## Shape
 
-The app is scaffolded for a configurable KPI engine. Metric-specific concepts should live in seed configuration or user data, not in business logic.
+The app mirrors the workbook tabs:
 
-Starter records can be created from Settings with **Seed starter metrics** after Firebase config and auth are available. The seeder uses stable document IDs and skips records that already exist.
+- `Dashboard`: weekly scorecard plus monthly spending view
+- `Today`: quick entry forms for workout, habits, nutrition, and spending
+- `Logs`: simple tables for recent records
+- `Settings`: workout target, macro goals, and category budgets
 
-Firestore data is scoped under `users/{userId}` with collection helpers for:
-
-- `metrics`
-- `metricFields`
-- `metricEntries`
-- `goalVersions`
-- `dashboards`
-- `dashboardWidgets`
-- `dimensions`
-- `budgetVersions`
-- `appSettings`
+Defaults are seeded from `life_dashboard_v2 (1).xlsx`, including the 4-days-per-week workout target, 225/150/56 macro goals, 5% macro tolerance, and monthly budget categories.
