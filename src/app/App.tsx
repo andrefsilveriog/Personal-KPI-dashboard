@@ -491,6 +491,8 @@ function TodayView({ data, updateData }: { data: LifeDashboardData; updateData: 
 
 function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData: (data: LifeDashboardData) => void }) {
   const [importMessage, setImportMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
+  const [isEditingEntries, setIsEditingEntries] = useState(false);
+  const [entryDrafts, setEntryDrafts] = useState<Record<string, SpendingDraft>>({});
   const [spending, setSpending] = useState<SpendingDraft>({
     date: today,
     category: Object.keys(data.config.budgets)[0] ?? "Others",
@@ -518,18 +520,42 @@ function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData:
     setSpending({ ...spending, amount: "", notes: "" });
   }
 
-  function updateEntry(next: SpendingEntry) {
-    updateData({
-      ...data,
-      spending: data.spending.map((entry) => (entry.id === next.id ? next : entry))
-    });
-  }
-
   function deleteEntry(id: string) {
     updateData({
       ...data,
       spending: data.spending.filter((entry) => entry.id !== id)
     });
+    setEntryDrafts(({ [id]: _deleted, ...remaining }) => remaining);
+  }
+
+  function startEditingEntries() {
+    setEntryDrafts(Object.fromEntries(data.spending.map((entry) => [entry.id, spendingEntryToDraft(entry)])));
+    setIsEditingEntries(true);
+  }
+
+  function saveEditedEntries() {
+    if (Object.values(entryDrafts).some((draft) => draft.amount === "")) {
+      setImportMessage({ tone: "error", text: "Every edited purchase needs an amount before saving." });
+      return;
+    }
+
+    const nextSpending = data.spending.map((entry) => {
+      const draft = entryDrafts[entry.id];
+
+      if (!draft || draft.amount === "") {
+        return entry;
+      }
+
+      return spendingDraftToEntry(entry.id, draft);
+    });
+
+    updateData({ ...data, spending: nextSpending });
+    setImportMessage({ tone: "success", text: "Saved ledger edits." });
+    setIsEditingEntries(false);
+  }
+
+  function updateEntryDraft(id: string, draft: SpendingDraft) {
+    setEntryDrafts((current) => ({ ...current, [id]: draft }));
   }
 
   function downloadSampleCsv() {
@@ -600,16 +626,27 @@ function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData:
       <div className="panel">
         <div className="panel-heading">
           <h2>Entries</h2>
-          <strong>{data.spending.length} purchases</strong>
+          <div className="ledger-actions">
+            <strong>{data.spending.length} purchases</strong>
+            <button
+              className={isEditingEntries ? "primary-button" : "secondary-button"}
+              type="button"
+              onClick={isEditingEntries ? saveEditedEntries : startEditingEntries}
+            >
+              {isEditingEntries ? "Save" : "Edit"}
+            </button>
+          </div>
         </div>
         <div className="ledger-entry-list">
           {sortSpendingByDate(data.spending).map((entry) => (
             <LedgerEntryRow
               categories={Object.keys(data.config.budgets)}
+              draft={entryDrafts[entry.id] ?? spendingEntryToDraft(entry)}
               entry={entry}
+              isEditing={isEditingEntries}
               key={entry.id}
               onDelete={() => deleteEntry(entry.id)}
-              onSave={updateEntry}
+              onDraftChange={(draft) => updateEntryDraft(entry.id, draft)}
             />
           ))}
         </div>
@@ -949,55 +986,67 @@ function BudgetBars({ budgets }: { budgets: ReturnType<typeof summarizeBudgets> 
 
 function LedgerEntryRow({
   categories,
+  draft,
   entry,
+  isEditing,
   onDelete,
-  onSave
+  onDraftChange
 }: {
   categories: string[];
+  draft: SpendingDraft;
   entry: SpendingEntry;
+  isEditing: boolean;
   onDelete: () => void;
-  onSave: (entry: SpendingEntry) => void;
+  onDraftChange: (draft: SpendingDraft) => void;
 }) {
   const payment = entry.credit !== "" ? "credit" : "cash";
-  const [draft, setDraft] = useState<SpendingDraft>({
+
+  return (
+    <div className={`ledger-entry-row ${isEditing ? "is-editing" : ""}`}>
+      {isEditing ? (
+        <>
+          <input aria-label="Purchase date" type="date" value={draft.date} onChange={(event) => onDraftChange({ ...draft, date: event.target.value })} />
+          <input aria-label="Purchase notes" value={draft.notes} onChange={(event) => onDraftChange({ ...draft, notes: event.target.value })} />
+          <select aria-label="Payment method" value={draft.payment} onChange={(event) => onDraftChange({ ...draft, payment: event.target.value as SpendingDraft["payment"] })}>
+            <option value="credit">Credit</option>
+            <option value="cash">Cash</option>
+          </select>
+          <input aria-label="Purchase amount" min="0" step="0.01" type="number" value={draft.amount} onChange={(event) => onDraftChange({ ...draft, amount: readNumber(event.target.value) })} />
+          <CategorySelect categories={categories} value={draft.category} onChange={(category) => onDraftChange({ ...draft, category })} />
+        </>
+      ) : (
+        <>
+          <span>{entry.date}</span>
+          <strong>{entry.notes || "-"}</strong>
+          <span className="payment-pill">{payment}</span>
+          <span>{toMoney(spendingTotal(entry))}</span>
+          <span>{entry.category}</span>
+        </>
+      )}
+      <button className="danger-button" type="button" onClick={onDelete}>Delete</button>
+    </div>
+  );
+}
+
+function spendingEntryToDraft(entry: SpendingEntry): SpendingDraft {
+  return {
     date: entry.date,
     category: entry.category,
     amount: spendingTotal(entry),
-    payment,
+    payment: entry.credit !== "" ? "credit" : "cash",
     notes: entry.notes
-  });
-  const canSave = draft.amount !== "";
+  };
+}
 
-  function saveEntry(event: FormEvent) {
-    event.preventDefault();
-    if (draft.amount === "") {
-      return;
-    }
-
-    onSave({
-      id: entry.id,
-      date: draft.date,
-      category: draft.category,
-      credit: draft.payment === "credit" ? draft.amount : "",
-      cash: draft.payment === "cash" ? draft.amount : "",
-      notes: draft.notes
-    });
-  }
-
-  return (
-    <form className="ledger-entry-row" onSubmit={saveEntry}>
-      <input aria-label="Purchase date" type="date" value={draft.date} onChange={(event) => setDraft({ ...draft, date: event.target.value })} />
-      <CategorySelect categories={categories} value={draft.category} onChange={(category) => setDraft({ ...draft, category })} />
-      <input aria-label="Purchase amount" min="0" step="0.01" type="number" value={draft.amount} onChange={(event) => setDraft({ ...draft, amount: readNumber(event.target.value) })} />
-      <select aria-label="Payment method" value={draft.payment} onChange={(event) => setDraft({ ...draft, payment: event.target.value as SpendingDraft["payment"] })}>
-        <option value="credit">Credit</option>
-        <option value="cash">Cash</option>
-      </select>
-      <input aria-label="Purchase notes" value={draft.notes} onChange={(event) => setDraft({ ...draft, notes: event.target.value })} />
-      <button className="secondary-button" disabled={!canSave} type="submit">Save</button>
-      <button className="danger-button" type="button" onClick={onDelete}>Delete</button>
-    </form>
-  );
+function spendingDraftToEntry(id: string, draft: SpendingDraft): SpendingEntry {
+  return {
+    id,
+    date: draft.date,
+    category: draft.category,
+    credit: draft.payment === "credit" ? draft.amount : "",
+    cash: draft.payment === "cash" ? draft.amount : "",
+    notes: draft.notes
+  };
 }
 
 function CategorySelect({

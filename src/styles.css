@@ -745,8 +745,41 @@ th {
 
 .ledger-entry-row {
   display: grid;
-  grid-template-columns: 142px minmax(160px, 1fr) 120px 110px minmax(180px, 1.4fr) 76px 82px;
+  grid-template-columns: 142px minmax(220px, 1.5fr) 112px 120px minmax(160px, 1fr) 82px;
+  align-items: center;
   gap: 8px;
+  min-height: 38px;
+  border-bottom: 1px solid var(--border-soft);
+  color: var(--muted);
+  font-size: 0.9rem;
+}
+
+.ledger-entry-row strong {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--text);
+  font-weight: 760;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.ledger-entry-row.is-editing {
+  border-bottom: 0;
+}
+
+.payment-pill {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: fit-content;
+  min-height: 26px;
+  border-radius: 999px;
+  padding: 0 10px;
+  background: var(--surface-soft);
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: capitalize;
 }
 
 .recent-ledger {
