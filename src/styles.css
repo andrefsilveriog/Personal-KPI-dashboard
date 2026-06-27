@@ -546,6 +546,7 @@ button.metric-card:focus-visible,
 }
 
 .habit-progress-track {
+  --habit-run-overlap: 5px;
   position: relative;
   width: 100%;
   height: 10px;
@@ -555,8 +556,29 @@ button.metric-card:focus-visible,
 }
 
 .habit-progress-fill {
+  position: relative;
   height: 100%;
+  overflow: hidden;
   border-radius: inherit;
+}
+
+.habit-progress-run {
+  position: absolute;
+  top: 0;
+  bottom: 0;
+  border-radius: inherit;
+}
+
+.habit-progress-run.is-good {
+  background: var(--accent-good);
+}
+
+.habit-progress-run.is-warn {
+  background: var(--accent-warn);
+}
+
+.habit-progress-run.is-bad {
+  background: var(--accent-bad);
 }
 
 .budget-panel {

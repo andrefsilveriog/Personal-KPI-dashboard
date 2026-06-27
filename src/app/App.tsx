@@ -808,6 +808,7 @@ function HabitProgressRow({ row }: { row: HabitProgress }) {
   const lastFilledIndex = row.segments.reduce((lastIndex, segment, index) => segment.tone === "empty" ? lastIndex : index, -1);
   const filledSegments = lastFilledIndex === -1 ? [] : row.segments.slice(0, lastFilledIndex + 1);
   const fillWidth = (filledSegments.length / row.segments.length) * 100;
+  const colorRuns = buildHabitProgressRuns(filledSegments);
   const statusLabel = row.segments.map((segment) => `${segment.label}: ${habitSegmentStatus(segment.tone)}`).join(", ");
 
   return (
@@ -817,13 +818,18 @@ function HabitProgressRow({ row }: { row: HabitProgress }) {
         <strong>{completed}/7</strong>
       </div>
       <div aria-label={statusLabel} className="habit-progress-track" title={statusLabel}>
-        <div
-          className="habit-progress-fill"
-          style={{
-            background: buildHabitProgressGradient(filledSegments),
-            width: `${fillWidth}%`
-          }}
-        />
+        <div className="habit-progress-fill" style={{ width: `${fillWidth}%` }}>
+          {colorRuns.map((run) => (
+            <span
+              className={`habit-progress-run is-${run.tone}`}
+              key={`${run.tone}-${run.start}`}
+              style={{
+                left: run.start === 0 ? `${run.left}%` : `calc(${run.left}% - var(--habit-run-overlap))`,
+                width: run.start === 0 ? `${run.width}%` : `calc(${run.width}% + var(--habit-run-overlap))`
+              }}
+            />
+          ))}
+        </div>
       </div>
     </div>
   );
@@ -884,29 +890,32 @@ function habitSegmentStatus(tone: HabitSegmentTone) {
   return labels[tone];
 }
 
-function buildHabitProgressGradient(segments: HabitProgress["segments"]) {
+function buildHabitProgressRuns(segments: HabitProgress["segments"]) {
   if (!segments.length) {
-    return "transparent";
+    return [];
   }
 
-  const step = 100 / segments.length;
-  const stops = segments.flatMap((segment, index) => {
-    const color = habitToneColor(segment.tone);
-    return [`${color} ${index * step}%`, `${color} ${(index + 1) * step}%`];
+  const runs: Array<{ left: number; length: number; start: number; tone: HabitSegmentTone; width: number }> = [];
+
+  segments.forEach((segment, index) => {
+    const currentRun = runs[runs.length - 1];
+
+    if (currentRun?.tone === segment.tone) {
+      currentRun.length += 1;
+      currentRun.width = (currentRun.length / segments.length) * 100;
+      return;
+    }
+
+    runs.push({
+      left: (index / segments.length) * 100,
+      length: 1,
+      start: index,
+      tone: segment.tone,
+      width: (1 / segments.length) * 100
+    });
   });
 
-  return `linear-gradient(to right, ${stops.join(", ")})`;
-}
-
-function habitToneColor(tone: HabitSegmentTone) {
-  const colors: Record<HabitSegmentTone, string> = {
-    bad: "var(--accent-bad)",
-    empty: "transparent",
-    good: "var(--accent-good)",
-    warn: "var(--accent-warn)"
-  };
-
-  return colors[tone];
+  return runs;
 }
 
 function getSelectedWeekDates(data: LifeDashboardData, selectedWeek: number) {
