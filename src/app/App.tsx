@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
+import { addDays, format, parseISO, startOfISOWeek } from "date-fns";
 import {
   availableWeeks,
   defaultConfig,
@@ -15,6 +16,7 @@ import {
   summarizeWeek,
   spendingTotal,
   toMoney,
+  weekOf,
   weekLabel,
   WorkoutEntry
 } from "./lifeDashboard";
@@ -41,6 +43,7 @@ export function App() {
   const [authReady, setAuthReady] = useState(!isFirebaseConfigured);
   const [syncStatus, setSyncStatus] = useState<SyncStatus>(isFirebaseConfigured ? "loading" : "local");
   const [syncError, setSyncError] = useState("");
+  const [now, setNow] = useState(() => new Date());
   const latestData = useRef(data);
   const weeks = availableWeeks(data);
   const [selectedWeek, setSelectedWeek] = useState(weeks[0] ?? 1);
@@ -55,6 +58,11 @@ export function App() {
     document.documentElement.dataset.theme = theme;
     localStorage.setItem(themeStorageKey, theme);
   }, [theme]);
+
+  useEffect(() => {
+    const timer = window.setInterval(() => setNow(new Date()), 30000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     if (!auth) {
@@ -180,7 +188,12 @@ export function App() {
       <div className={`app-content ${logTarget ? "is-blurred" : ""}`}>
         {chromeCollapsed ? (
           <header className="topbar topbar-collapsed">
-            <h1>Life Dashboard</h1>
+            <div className="collapsed-clock">
+              <strong>{format(now, "dd/MM/yyyy")}</strong>
+              <span>{format(now, "HH:mm")}</span>
+            </div>
+            <div className="collapsed-week">
+              <span>{formatWeekRange(data, selectedWeek)}</span>
             <button
               aria-label="Show controls"
               className="ghost-button icon-button"
@@ -190,6 +203,7 @@ export function App() {
             >
               ▾
             </button>
+            </div>
           </header>
         ) : (
           <>
@@ -400,16 +414,9 @@ function DashboardView({
         <div className="panel">
           <h2>Weekly Breakdown</h2>
           <div className="summary-list">
-            <SummaryRow label="Brushed twice" target={7} value={weekly.brushedTwice} />
-            <SummaryRow label="Brushed once only" target={7} value={weekly.brushedOnce} />
-            <SummaryRow label="Antihistamine" target={weekly.antihistamineTarget} value={weekly.antihistamineTaken} />
-            <SummaryRow label="Flossed" target={7} value={weekly.flossed} />
-            <SummaryRow label="Bedroom tidy" target={7} value={weekly.bedroomTidy} />
-            <SummaryRow label="Desk tidy" target={7} value={weekly.deskTidy} />
-            <SummaryRow label="Clothes away" target={7} value={weekly.clothesAway} />
-            <SummaryRow label="Carbs goal hit" target={7} value={weekly.carbsHit} />
-            <SummaryRow label="Protein goal hit" target={7} value={weekly.proteinHit} />
-            <SummaryRow label="Fat goal hit" target={7} value={weekly.fatHit} />
+            {buildHabitProgressRows(data, selectedWeek).map((row) => (
+              <HabitProgressRow key={row.label} row={row} />
+            ))}
           </div>
         </div>
 
@@ -783,6 +790,92 @@ function BudgetCategoryRow({
       {isDuplicate && <p className="field-error">Already exists</p>}
     </form>
   );
+}
+
+type HabitSegmentTone = "good" | "warn" | "bad";
+
+type HabitProgress = {
+  label: string;
+  segments: Array<{
+    date: string;
+    label: string;
+    tone: HabitSegmentTone;
+  }>;
+};
+
+function HabitProgressRow({ row }: { row: HabitProgress }) {
+  const completed = row.segments.filter((segment) => segment.tone === "good").length;
+
+  return (
+    <div className="habit-progress-row">
+      <div className="habit-progress-label">
+        <span>{row.label}</span>
+        <strong>{completed}/7</strong>
+      </div>
+      <div className="habit-segments">
+        {row.segments.map((segment) => (
+          <span
+            aria-label={`${segment.label}: ${segment.tone}`}
+            className={`habit-segment is-${segment.tone}`}
+            key={segment.date}
+            title={`${segment.label}: ${segment.tone}`}
+          />
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function buildHabitProgressRows(data: LifeDashboardData, selectedWeek: number): HabitProgress[] {
+  const habitsByDate = new Map(data.habits.map((entry) => [entry.date, entry]));
+  const weekDates = getSelectedWeekDates(data, selectedWeek);
+
+  return [
+    {
+      label: "Brushed",
+      segments: weekDates.map((date) => {
+        const brushed = habitsByDate.get(date)?.brushed;
+        const tone: HabitSegmentTone = brushed === "Yes" ? "good" : brushed === "Once" ? "warn" : "bad";
+        return { date, label: format(parseISO(date), "EEE dd"), tone };
+      })
+    },
+    {
+      label: "Flossed",
+      segments: weekDates.map((date) => habitYesNoSegment(date, habitsByDate.get(date)?.flossed))
+    },
+    {
+      label: "Bedroom",
+      segments: weekDates.map((date) => habitYesNoSegment(date, habitsByDate.get(date)?.bedroomTidy))
+    },
+    {
+      label: "Desk",
+      segments: weekDates.map((date) => habitYesNoSegment(date, habitsByDate.get(date)?.deskTidy))
+    },
+    {
+      label: "Clothes",
+      segments: weekDates.map((date) => habitYesNoSegment(date, habitsByDate.get(date)?.clothesAway))
+    }
+  ];
+}
+
+function habitYesNoSegment(date: string, value: "Yes" | "No" | undefined) {
+  return {
+    date,
+    label: format(parseISO(date), "EEE dd"),
+    tone: value === "Yes" ? "good" as const : "bad" as const
+  };
+}
+
+function getSelectedWeekDates(data: LifeDashboardData, selectedWeek: number) {
+  const match = [...data.workouts, ...data.habits, ...data.nutrition].find((entry) => weekOf(entry.date) === selectedWeek);
+  const weekStart = startOfISOWeek(match ? parseISO(match.date) : new Date());
+
+  return Array.from({ length: 7 }, (_item, index) => format(addDays(weekStart, index), "yyyy-MM-dd"));
+}
+
+function formatWeekRange(data: LifeDashboardData, selectedWeek: number) {
+  const dates = getSelectedWeekDates(data, selectedWeek);
+  return `${format(parseISO(dates[0]), "MMM d")} - ${format(parseISO(dates[6]), "MMM d")}`;
 }
 
 function MetricLogModal({
