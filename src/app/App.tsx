@@ -1,4 +1,4 @@
-import { FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
+import { ChangeEvent, FormEvent, ReactNode, useEffect, useMemo, useRef, useState } from "react";
 import { onAuthStateChanged, signInWithPopup, signOut, User } from "firebase/auth";
 import {
   availableWeeks,
@@ -490,6 +490,7 @@ function TodayView({ data, updateData }: { data: LifeDashboardData; updateData: 
 }
 
 function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData: (data: LifeDashboardData) => void }) {
+  const [importMessage, setImportMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [spending, setSpending] = useState<SpendingDraft>({
     date: today,
     category: Object.keys(data.config.budgets)[0] ?? "Others",
@@ -531,13 +532,62 @@ function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData:
     });
   }
 
+  function downloadSampleCsv() {
+    const categories = Object.keys(data.config.budgets);
+    const sample = buildLedgerSampleCsv(categories);
+    const url = URL.createObjectURL(new Blob([sample], { type: "text/csv;charset=utf-8" }));
+    const link = document.createElement("a");
+
+    link.href = url;
+    link.download = "ledger-import-sample.csv";
+    link.click();
+    URL.revokeObjectURL(url);
+  }
+
+  async function importCsv(event: ChangeEvent<HTMLInputElement>) {
+    const file = event.target.files?.[0];
+    event.target.value = "";
+
+    if (!file) {
+      return;
+    }
+
+    try {
+      const text = await file.text();
+      const result = parseLedgerCsv(text, Object.keys(data.config.budgets));
+
+      if (result.errors.length) {
+        setImportMessage({ tone: "error", text: result.errors.slice(0, 4).join(" ") });
+        return;
+      }
+
+      if (!result.entries.length) {
+        setImportMessage({ tone: "error", text: "No purchases found in the CSV." });
+        return;
+      }
+
+      updateData({ ...data, spending: [...result.entries, ...data.spending] });
+      setImportMessage({ tone: "success", text: `Imported ${result.entries.length} purchase${result.entries.length === 1 ? "" : "s"}.` });
+    } catch {
+      setImportMessage({ tone: "error", text: "Could not read that CSV file." });
+    }
+  }
+
   return (
     <section className="ledger-layout">
       <form className="panel ledger-panel" onSubmit={saveSpending}>
         <div className="panel-heading">
           <h2>Ledger</h2>
-          <button className="primary-button" type="submit">Add purchase</button>
+          <div className="ledger-actions">
+            <button className="secondary-button" type="button" onClick={downloadSampleCsv}>Sample CSV</button>
+            <label className="secondary-button file-button">
+              Import CSV
+              <input accept=".csv,text/csv" type="file" onChange={importCsv} />
+            </label>
+            <button className="primary-button" type="submit">Add purchase</button>
+          </div>
         </div>
+        {importMessage && <p className={`import-message is-${importMessage.tone}`}>{importMessage.text}</p>}
         <div className="ledger-form">
           <Field label="Date"><input type="date" value={spending.date} onChange={(event) => setSpending({ ...spending, date: event.target.value })} /></Field>
           <Field label="Category"><CategorySelect categories={Object.keys(data.config.budgets)} value={spending.category} onChange={(category) => setSpending({ ...spending, category })} /></Field>
@@ -967,6 +1017,134 @@ function CategorySelect({
       ))}
     </select>
   );
+}
+
+function buildLedgerSampleCsv(categories: string[]) {
+  const primaryCategory = categories[0] ?? "Others";
+  const secondaryCategory = categories.find((category) => category !== primaryCategory) ?? primaryCategory;
+  const rows = [
+    ["date", "category", "amount", "payment", "notes"],
+    [today, primaryCategory, "90.64", "credit", "Groceries"],
+    [today, secondaryCategory, "45.50", "cash", "Lunch"]
+  ];
+
+  return rows.map((row) => row.map(csvEscape).join(",")).join("\n");
+}
+
+function parseLedgerCsv(text: string, categories: string[]) {
+  const rows = parseCsvRows(text).filter((row) => row.some((cell) => cell.trim()));
+  const errors: string[] = [];
+  const entries: SpendingEntry[] = [];
+
+  if (rows.length < 2) {
+    return { entries, errors: ["CSV must include a header row and at least one purchase row."] };
+  }
+
+  const headers = rows[0].map((header) => header.trim().toLowerCase());
+  const indexes = {
+    amount: headers.indexOf("amount"),
+    category: headers.indexOf("category"),
+    date: headers.indexOf("date"),
+    notes: headers.indexOf("notes"),
+    payment: headers.indexOf("payment")
+  };
+  const missingHeaders = Object.entries(indexes)
+    .filter(([, index]) => index === -1)
+    .map(([header]) => header);
+
+  if (missingHeaders.length) {
+    return { entries, errors: [`Missing CSV columns: ${missingHeaders.join(", ")}.`] };
+  }
+
+  rows.slice(1).forEach((row, index) => {
+    const rowNumber = index + 2;
+    const date = row[indexes.date]?.trim() ?? "";
+    const category = row[indexes.category]?.trim() ?? "";
+    const amount = parseCsvAmount(row[indexes.amount] ?? "");
+    const payment = row[indexes.payment]?.trim().toLowerCase() ?? "";
+    const notes = row[indexes.notes]?.trim() ?? "";
+
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+      errors.push(`Row ${rowNumber}: date must be YYYY-MM-DD.`);
+    }
+
+    if (!categories.includes(category)) {
+      errors.push(`Row ${rowNumber}: category must match one of your budget categories.`);
+    }
+
+    if (amount === null || amount <= 0) {
+      errors.push(`Row ${rowNumber}: amount must be a positive number.`);
+    }
+
+    if (payment !== "credit" && payment !== "cash") {
+      errors.push(`Row ${rowNumber}: payment must be credit or cash.`);
+    }
+
+    if (!errors.some((error) => error.startsWith(`Row ${rowNumber}:`)) && amount !== null && (payment === "credit" || payment === "cash")) {
+      entries.push({
+        id: crypto.randomUUID(),
+        date,
+        category,
+        credit: payment === "credit" ? amount : "",
+        cash: payment === "cash" ? amount : "",
+        notes
+      });
+    }
+  });
+
+  return { entries, errors };
+}
+
+function parseCsvRows(text: string) {
+  const rows: string[][] = [];
+  let currentCell = "";
+  let currentRow: string[] = [];
+  let inQuotes = false;
+
+  for (let index = 0; index < text.length; index += 1) {
+    const char = text[index];
+    const nextChar = text[index + 1];
+
+    if (char === '"' && inQuotes && nextChar === '"') {
+      currentCell += '"';
+      index += 1;
+    } else if (char === '"') {
+      inQuotes = !inQuotes;
+    } else if (char === "," && !inQuotes) {
+      currentRow.push(currentCell);
+      currentCell = "";
+    } else if ((char === "\n" || char === "\r") && !inQuotes) {
+      if (char === "\r" && nextChar === "\n") {
+        index += 1;
+      }
+
+      currentRow.push(currentCell);
+      rows.push(currentRow);
+      currentCell = "";
+      currentRow = [];
+    } else {
+      currentCell += char;
+    }
+  }
+
+  currentRow.push(currentCell);
+  rows.push(currentRow);
+  return rows;
+}
+
+function parseCsvAmount(value: string) {
+  const normalized = value
+    .trim()
+    .replace(/^R\$\s*/, "")
+    .replace(/\s/g, "")
+    .replace(",", ".");
+  const amount = Number(normalized);
+
+  return Number.isFinite(amount) ? amount : null;
+}
+
+function csvEscape(value: string) {
+  return /[",\n\r]/.test(value) ? `"${value.replace(/"/g, '""')}"` : value;
 }
 
 function ProgressBar({ tone, value }: { tone?: "good" | "warn" | "bad"; value: number }) {
