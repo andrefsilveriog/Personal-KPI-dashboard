@@ -179,14 +179,18 @@ export function App() {
     <main className="shell">
       <div className={`app-content ${logTarget ? "is-blurred" : ""}`}>
         {chromeCollapsed ? (
-          <button
-            aria-label="Show controls"
-            className="chrome-restore-button"
-            type="button"
-            onClick={() => setChromeCollapsed(false)}
-          >
-            Show controls
-          </button>
+          <header className="topbar topbar-collapsed">
+            <h1>Life Dashboard</h1>
+            <button
+              aria-label="Show controls"
+              className="ghost-button icon-button"
+              title="Show controls"
+              type="button"
+              onClick={() => setChromeCollapsed(false)}
+            >
+              ▾
+            </button>
+          </header>
         ) : (
           <>
             <header className="topbar">
@@ -382,8 +386,7 @@ function DashboardView({
       </div>}
 
       <section className="metric-grid compact-metrics">
-        <MetricCard label="Workout" value={`${weekly.workoutSessions}/${weekly.workoutTarget}`} detail={weekly.hitWorkoutTarget ? "Target hit" : "Not yet"} progress={weekly.workoutSessions / weekly.workoutTarget} tone={weekly.hitWorkoutTarget ? "good" : "warn"} onClick={() => onLogMetric("workout")} />
-        <MetricCard label="Avg quality" value={weekly.averageWorkoutQuality?.toFixed(1) ?? "-"} detail={`${weekly.daysLogged} days touched`} onClick={() => onLogMetric("workout")} />
+        <MetricCard label="Workout" value={`${weekly.workoutSessions}/${weekly.workoutTarget}`} detail={`Avg quality ${weekly.averageWorkoutQuality?.toFixed(1) ?? "-"} · ${weekly.hitWorkoutTarget ? "Target hit" : "Not yet"}`} progress={weekly.workoutSessions / weekly.workoutTarget} tone={weekly.hitWorkoutTarget ? "good" : "warn"} onClick={() => onLogMetric("workout")} />
         <MetricCard label="Habit score" value={weekly.averageHabitScore.toFixed(1)} detail="Out of 5 daily" progress={weekly.averageHabitScore / 5} onClick={() => onLogMetric("habit")} />
         <MetricCard label="Antihistamine" value={`${weekly.antihistamineTaken}/${weekly.antihistamineTarget}`} detail="Daily dose" progress={weekly.antihistamineTaken / weekly.antihistamineTarget} tone={weekly.antihistamineTaken >= weekly.antihistamineTarget ? "good" : "warn"} onClick={() => onLogMetric("antihistamine")} />
         <MetricCard label="Perfect macros" value={String(weekly.perfectMacroDays)} detail={`${weekly.nutritionFullyLogged} fully logged`} progress={weekly.perfectMacroDays / 7} tone={weekly.perfectMacroDays >= 4 ? "good" : "warn"} onClick={() => onLogMetric("nutrition")} />
