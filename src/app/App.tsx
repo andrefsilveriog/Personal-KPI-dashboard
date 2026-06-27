@@ -819,13 +819,14 @@ function HabitProgressRow({ row }: { row: HabitProgress }) {
       </div>
       <div aria-label={statusLabel} className="habit-progress-track" title={statusLabel}>
         <div className="habit-progress-fill" style={{ width: `${fillWidth}%` }}>
-          {colorRuns.map((run) => (
+          {colorRuns.map((run, index) => (
             <span
               className={`habit-progress-run is-${run.tone}`}
               key={`${run.tone}-${run.start}`}
               style={{
-                left: run.start === 0 ? `${run.left}%` : `calc(${run.left}% - var(--habit-run-overlap))`,
-                width: run.start === 0 ? `${run.width}%` : `calc(${run.width}% + var(--habit-run-overlap))`
+                left: `${run.left}%`,
+                width: index === colorRuns.length - 1 ? `${run.width}%` : `calc(${run.width}% + var(--habit-run-overlap))`,
+                zIndex: colorRuns.length - index
               }}
             />
           ))}
