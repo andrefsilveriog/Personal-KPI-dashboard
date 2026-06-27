@@ -437,6 +437,13 @@ type SpendingDraft = {
   notes: string;
 };
 
+type LedgerFilters = {
+  category: string;
+  dateFrom: string;
+  dateTo: string;
+  payment: "all" | "credit" | "cash";
+};
+
 function TodayView({ data, updateData }: { data: LifeDashboardData; updateData: (data: LifeDashboardData) => void }) {
   const [workout, setWorkout] = useState<WorkoutEntry>(() => data.workouts.find((entry) => entry.date === today) ?? { date: today, went: "No", quality: "", notes: "" });
   const [habit, setHabit] = useState<HabitEntry>(() => data.habits.find((entry) => entry.date === today) ?? {
@@ -500,6 +507,7 @@ function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData:
   const [importMessage, setImportMessage] = useState<{ tone: "error" | "success"; text: string } | null>(null);
   const [isEditingEntries, setIsEditingEntries] = useState(false);
   const [entryDrafts, setEntryDrafts] = useState<Record<string, SpendingDraft>>({});
+  const [filters, setFilters] = useState<LedgerFilters>({ category: "all", dateFrom: "", dateTo: "", payment: "all" });
   const [spending, setSpending] = useState<SpendingDraft>({
     date: today,
     category: Object.keys(data.config.budgets)[0] ?? "Others",
@@ -507,6 +515,7 @@ function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData:
     payment: "credit",
     notes: ""
   });
+  const filteredSpending = sortSpendingByDate(data.spending).filter((entry) => matchesLedgerFilters(entry, filters));
 
   function saveSpending(event: FormEvent) {
     event.preventDefault();
@@ -634,7 +643,7 @@ function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData:
         <div className="panel-heading">
           <h2>Entries</h2>
           <div className="ledger-actions">
-            <strong>{data.spending.length} purchases</strong>
+            <strong>{filteredSpending.length} / {data.spending.length} purchases</strong>
             <button
               className={isEditingEntries ? "primary-button" : "secondary-button"}
               type="button"
@@ -644,8 +653,13 @@ function LedgerView({ data, updateData }: { data: LifeDashboardData; updateData:
             </button>
           </div>
         </div>
+        <LedgerFilterBar
+          categories={Object.keys(data.config.budgets)}
+          filters={filters}
+          onChange={setFilters}
+        />
         <div className="ledger-entry-list">
-          {sortSpendingByDate(data.spending).map((entry) => (
+          {filteredSpending.map((entry) => (
             <LedgerEntryRow
               categories={Object.keys(data.config.budgets)}
               draft={entryDrafts[entry.id] ?? spendingEntryToDraft(entry)}
@@ -1033,6 +1047,74 @@ function LedgerEntryRow({
       <button className="danger-button" type="button" onClick={onDelete}>Delete</button>
     </div>
   );
+}
+
+function LedgerFilterBar({
+  categories,
+  filters,
+  onChange
+}: {
+  categories: string[];
+  filters: LedgerFilters;
+  onChange: (filters: LedgerFilters) => void;
+}) {
+  const hasFilters = filters.category !== "all" || filters.dateFrom || filters.dateTo || filters.payment !== "all";
+
+  return (
+    <div className="ledger-filterbar">
+      <Field label="Payment">
+        <select value={filters.payment} onChange={(event) => onChange({ ...filters, payment: event.target.value as LedgerFilters["payment"] })}>
+          <option value="all">All</option>
+          <option value="credit">Credit</option>
+          <option value="cash">Cash</option>
+        </select>
+      </Field>
+      <Field label="From">
+        <input type="date" value={filters.dateFrom} onChange={(event) => onChange({ ...filters, dateFrom: event.target.value })} />
+      </Field>
+      <Field label="To">
+        <input type="date" value={filters.dateTo} onChange={(event) => onChange({ ...filters, dateTo: event.target.value })} />
+      </Field>
+      <Field label="Category">
+        <select value={filters.category} onChange={(event) => onChange({ ...filters, category: event.target.value })}>
+          <option value="all">All</option>
+          {categories.map((category) => (
+            <option key={category}>{category}</option>
+          ))}
+        </select>
+      </Field>
+      <button
+        className="secondary-button"
+        disabled={!hasFilters}
+        type="button"
+        onClick={() => onChange({ category: "all", dateFrom: "", dateTo: "", payment: "all" })}
+      >
+        Clear
+      </button>
+    </div>
+  );
+}
+
+function matchesLedgerFilters(entry: SpendingEntry, filters: LedgerFilters) {
+  const payment = entry.credit !== "" ? "credit" : "cash";
+
+  if (filters.payment !== "all" && payment !== filters.payment) {
+    return false;
+  }
+
+  if (filters.category !== "all" && entry.category !== filters.category) {
+    return false;
+  }
+
+  if (filters.dateFrom && entry.date < filters.dateFrom) {
+    return false;
+  }
+
+  if (filters.dateTo && entry.date > filters.dateTo) {
+    return false;
+  }
+
+  return true;
 }
 
 function spendingEntryToDraft(entry: SpendingEntry): SpendingDraft {

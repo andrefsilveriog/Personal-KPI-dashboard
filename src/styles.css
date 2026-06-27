@@ -768,6 +768,16 @@ th {
   gap: 8px;
 }
 
+.ledger-filterbar {
+  display: grid;
+  grid-template-columns: 120px 145px 145px minmax(180px, 1fr) 82px;
+  align-items: end;
+  gap: 8px;
+  margin-bottom: 12px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--border-soft);
+}
+
 .ledger-entry-row {
   display: grid;
   grid-template-columns: 142px minmax(220px, 1.5fr) 112px 120px minmax(160px, 1fr) 82px;
@@ -842,6 +852,7 @@ th {
   .budget-category-row,
   .add-category-row,
   .ledger-entry-row,
+  .ledger-filterbar,
   .ledger-form {
     grid-template-columns: 1fr;
   }
